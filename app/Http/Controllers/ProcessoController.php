@@ -782,6 +782,17 @@ class ProcessoController extends Controller
             ->delete();
 
         // Redirecionar para o painel ou permanecer na aba
+        if ($request->header('HX-Request')) {
+            $redirectUrl = $nextAba === 'index' 
+                ? route('processos.index') 
+                : route('processos.show', ['processo' => $processo->id, 'aba' => $nextAba]);
+            
+            // Colocar mensagem na sessão para o toast de sucesso aparecer após o redirect
+            session()->flash('success', $nextAba === 'index' ? 'Processo salvo com sucesso!' : 'Formulário salvo com sucesso!');
+            
+            return response('', 200)->header('HX-Redirect', $redirectUrl);
+        }
+
         if ($nextAba === 'index') {
             return redirect()->route('processos.index')
                              ->with('success', 'Processo salvo com sucesso!');
