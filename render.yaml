@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: foco-15-app
+    name: foco-18-app
     env: docker
     plan: free
     region: ohio
@@ -10,25 +10,28 @@ services:
       - key: APP_DEBUG
         value: false
       - key: APP_KEY
-        sync: false # Você deverá preencher o APP_KEY no painel do Render depois
+        sync: false # Preencha no painel do Render
       - key: APP_URL
-        generateValue: true # O Render vai preencher automaticamente com a URL do app
+        generateValue: true # O Render preenche com a URL do app
       - key: DB_CONNECTION
         value: pgsql
-      - key: DATABASE_URL
-        fromDatabase:
-          name: foco-15-database
-          property: connectionString
+      - key: DB_HOST
+        sync: false # Preencha com o host do Supabase
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        value: postgres
+      - key: DB_USERNAME
+        sync: false # Preencha com o usuário do Supabase
+      - key: DB_PASSWORD
+        sync: false # Preencha com a senha do Supabase
+      - key: DB_SSLMODE
+        value: require
       - key: SESSION_DRIVER
         value: database
       - key: CACHE_STORE
         value: database
       - key: QUEUE_CONNECTION
         value: database
-
-databases:
-  - name: foco-15-database
-    databaseName: foco15
-    user: foco15
-    plan: free
-    region: ohio
+      - key: SEED_DATABASE
+        value: false
