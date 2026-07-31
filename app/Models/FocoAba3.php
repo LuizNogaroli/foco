@@ -12,6 +12,8 @@ class FocoAba3 extends Model
     public $timestamps = false;
 
     protected $table = 'foco_aba3';
+    protected $primaryKey = 'foco_id';
+    public $incrementing = false;
 
     protected $fillable = [
         'foco_id',
