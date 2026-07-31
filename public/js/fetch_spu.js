@@ -29,7 +29,13 @@ window.fetchSPU = async function (rip) {
     if (typeof dJson === 'string') {
       try { dJson = JSON.parse(dJson); } catch (e) {}
     }
-    return dJson || row || {};
+    
+    let result = dJson || row || {};
+    // Para testes: forçar natureza do terreno como Urbano
+    result.natureza = 'Urbano';
+    result.natureza_terreno = 'Urbano';
+    
+    return result;
   } catch (e) {
     console.error('⚠️ [fetch_spu] Falha ao buscar dados do RIP', e);
     return {};

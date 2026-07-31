@@ -333,7 +333,7 @@ window.criarBlocoImovel = function(rip, dados) {
             </h4>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="rip-status-badge" id="status-rip-${rip}" data-status="${statusText}" style="font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold; ${statusStyle}">${statusText}</span>
-                <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold;">▼</span>
+                <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold;">▶</span>
             </div>
         </div>
         <div class="accordion-content" style="display: none; padding: 16px;">
@@ -1293,7 +1293,7 @@ window.toggleAccordion = function(header) {
     const content = header.nextElementSibling;
     const icon = header.querySelector('.accordion-icon');
     if (content) {
-        const isCollapsed = content.style.display === 'none';
+        const isCollapsed = window.getComputedStyle(content).display === 'none';
         
         if (isCollapsed) {
             content.style.display = 'block';
@@ -1312,11 +1312,6 @@ window.toggleAccordion = function(header) {
             };
         }
         
-        if (icon) {
-            icon.style.display = "inline-block";
-            icon.style.transition = "transform 0.3s ease";
-            icon.style.transform = isCollapsed ? 'rotate(-180deg)' : 'rotate(0deg)';
-        }
         header.classList.toggle('active', isCollapsed);
     }
 };
@@ -1326,6 +1321,17 @@ window.criarBlocoSolicitacaoCriacao = function(texto) {
     if (!texto) return;
     const container = document.getElementById('container-solicitacao-criacao-rip');
     if (!container) return;
+
+    const anexos = window.INLINE_SOLICITACAO_ANEXOS || [];
+    let anexosHtml = '';
+    if (anexos.length > 0) {
+        anexosHtml = anexos.map(a =>
+            `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border-radius:4px;border:1px solid #f3f4f6;margin-top:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <a href="${a.base64}" target="_blank" download="${a.nome}" style="color:#1e3a5f;text-decoration:underline;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.nome}">${a.nome}</a>
+            </div>`
+        ).join('');
+    }
 
     container.style.display = "block";
     container.innerHTML = `
@@ -1338,6 +1344,7 @@ window.criarBlocoSolicitacaoCriacao = function(texto) {
                     <label style="display:block; margin-bottom: 5px; font-weight: 600; color: #9d174d;">Justificativa enviada ao setor de cadastro:</label>
                     <textarea readonly style="width: 100%; border: 1px solid #fbcfe8; padding: 8px; border-radius: 4px; background-color: #fff; color: #334155; resize: vertical; font-family: inherit; font-size: 14px;" rows="4">${texto}</textarea>
                 </div>
+                ${anexosHtml ? `<div style="margin-top:12px;"><label style="display:block;margin-bottom:5px;font-weight:600;color:#9d174d;font-size:13px;">Anexos:</label>${anexosHtml}</div>` : ''}
             </div>
         </div>
     `;
@@ -1378,7 +1385,7 @@ window.criarBlocoCadastroMinimo = function(dados, idx) {
     div.innerHTML = `
         <div class="accordion-header type-cadastro" style="padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; border-bottom: 1px solid #cbd5e1;" onclick="toggleAccordion(this)">
             <h4 style="margin: 0; font-weight: bold;">Cadastro Mínimo Selecionado: CEP ${dados.cep || 'N/D'}</h4>
-            <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold;">▼</span>
+            <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold;">▶</span>
         </div>
         <div class="accordion-content" style="display: none; padding: 16px;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
@@ -1401,26 +1408,27 @@ window.criarBlocoCadastroMinimo = function(dados, idx) {
     container.appendChild(div);
 };
 
-// Carregar dados iniciais de indicação (Cadastro Mínimo e Solicitação de Criação), se existirem
+// Carregar dados iniciais de indicação (Solicitação de Criação de RIP), se existirem
 setTimeout(async () => {
-    const processId = localStorage.getItem('CURRENT_PROCESS_ID');
-    if (processId && window.parent && typeof window.parent.carregarIndicacoes === 'function') {
-        const registro = await window.parent.carregarIndicacoes(processId);
-        if (registro && registro.dados_json) {
-            // 1. Solicitação de Criação de RIP (Carrega por cima)
-            const solicitacao = registro.dados_json.solicitacao_criacao_rip || "";
-            if (solicitacao && typeof window.criarBlocoSolicitacaoCriacao === 'function') {
-                window.criarBlocoSolicitacaoCriacao(solicitacao);
-            }
+    // Prefere dados inline do Laravel (draft), fallback Supabase
+    let solicitacao = window.INLINE_SOLICITACAO_RIP || "";
 
-            // 2. Cadastro Mínimo (Carrega por último)
-            const cadastros = registro.dados_json.cadastros_minimos || [];
-            cadastros.forEach((cad, idx) => {
-                if (typeof window.criarBlocoCadastroMinimo === 'function') {
-                    window.criarBlocoCadastroMinimo(cad, idx);
+    if (!solicitacao) {
+        const processId = localStorage.getItem('CURRENT_PROCESS_ID');
+        if (processId && window.parent && typeof window.parent.carregarIndicacoes === 'function') {
+            try {
+                const registro = await window.parent.carregarIndicacoes(processId);
+                if (registro && registro.dados_json && registro.dados_json.solicitacao_criacao_rip) {
+                    solicitacao = registro.dados_json.solicitacao_criacao_rip;
                 }
-            });
+            } catch(e) {
+                console.warn('[foco-02] Erro ao carregar indicações do Supabase:', e);
+            }
         }
+    }
+
+    if (solicitacao && typeof window.criarBlocoSolicitacaoCriacao === 'function') {
+        window.criarBlocoSolicitacaoCriacao(solicitacao);
     }
 }, 1000);
 
@@ -1546,15 +1554,147 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// =========================================================================
+// MAPA / GEOLOCALIZAÇÃO
+// =========================================================================
+
+window.inicializarMapa = function() {
+    if (window.map) {
+        setTimeout(function() { window.map.invalidateSize(); }, 300);
+        return;
+    }
+    window.map = L.map('modal-map').setView([-15.793889, -47.882778], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(window.map);
+
+    window.drawnItems = new L.FeatureGroup();
+    window.map.addLayer(window.drawnItems);
+
+    var drawControl = new L.Control.Draw({
+        position: 'topright',
+        draw: {
+            polygon: true,
+            polyline: false,
+            marker: true,
+            circle: false,
+            rectangle: true,
+            circlemarker: false
+        },
+        edit: { featureGroup: window.drawnItems }
+    });
+    window.map.addControl(drawControl);
+
+    window.map.on(L.Draw.Event.CREATED, function (e) {
+        window.drawnItems.clearLayers();
+        window.drawnItems.addLayer(e.layer);
+    });
+};
+
+window.fecharGeoModal = function() {
+    var modal = document.getElementById('geoModal');
+    if (modal) modal.style.display = 'none';
+};
+
+var queriesToTry = [];
+var queryIndex = 0;
+
+window.nominatimCallback = function(geo) {
+    if (geo && geo.length > 0) {
+        var lat = parseFloat(geo[0].lat);
+        var lon = parseFloat(geo[0].lon);
+        if (window.map) window.map.setView([lat, lon], 15);
+    } else {
+        tentaProximaBusca();
+    }
+};
+
+function tentaProximaBusca() {
+    if (queryIndex >= queriesToTry.length) {
+        console.warn("Busca Nominatim esgotada.");
+        return;
+    }
+    var scriptId = 'nominatim-jsonp';
+    var oldScript = document.getElementById(scriptId);
+    if (oldScript) oldScript.remove();
+
+    var script = document.createElement('script');
+    script.id = scriptId;
+    script.src = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(queriesToTry[queryIndex]) + '&json_callback=nominatimCallback';
+    document.body.appendChild(script);
+    queryIndex++;
+}
+
+window.buscarNoModal = function() {
+    var val = document.getElementById('modal-search-input').value.trim();
+    if (!val) return;
+
+    var cepLimpo = val.replace(/\D/g, '');
+    if (cepLimpo.length === 8) {
+        fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!data.erro) {
+                    queriesToTry = [];
+                    if (data.logradouro) queriesToTry.push(data.logradouro + ', ' + data.localidade + ', ' + data.uf + ', Brasil');
+                    queriesToTry.push(data.localidade + ', ' + data.uf + ', Brasil');
+                    queriesToTry.push(cepLimpo + ', Brasil');
+                    queryIndex = 0;
+                    tentaProximaBusca();
+                }
+            })
+            .catch(function(err) { console.error('Erro ViaCEP:', err); });
+    } else {
+        queriesToTry = [val];
+        queryIndex = 0;
+        tentaProximaBusca();
+    }
+};
+
+function obterCentroDasGeometrias() {
+    if (!window.drawnItems || window.drawnItems.getLayers().length === 0) return null;
+    var layer = window.drawnItems.getLayers()[0];
+    if (layer instanceof L.Marker) {
+        return layer.getLatLng();
+    }
+    if (layer.getBounds) {
+        return layer.getBounds().getCenter();
+    }
+    return null;
+}
+
+window.salvarGeoModal = function() {
+    var centro = obterCentroDasGeometrias();
+    if (centro) {
+        var latInput = document.getElementById('latitude');
+        var lonInput = document.getElementById('longitude');
+        if (latInput) {
+            latInput.value = centro.lat.toFixed(6);
+            latInput.readOnly = true;
+            latInput.style.backgroundColor = '#e9ecef';
+            latInput.style.cursor = 'not-allowed';
+            latInput.dispatchEvent(new Event('input', {bubbles: true}));
+        }
+        if (lonInput) {
+            lonInput.value = centro.lng.toFixed(6);
+            lonInput.readOnly = true;
+            lonInput.style.backgroundColor = '#e9ecef';
+            lonInput.style.cursor = 'not-allowed';
+            lonInput.dispatchEvent(new Event('input', {bubbles: true}));
+        }
+        window.fecharGeoModal();
+    } else {
+        alert('Por favor, desenhe uma área (polígono/retângulo) ou marque um ponto no mapa usando as ferramentas no canto superior direito antes de salvar.');
+    }
+};
+
+// =========================================================================
 // Abertura do Modal de Geolocalização (Global)
+// =========================================================================
 window.abrirGeoModal = function() {
     const geoModal = document.getElementById('geoModal');
     if (geoModal) {
         geoModal.style.display = 'flex';
     }
-    if (typeof window.inicializarMapa === 'function') {
-        window.inicializarMapa();
-    }
+    window.inicializarMapa();
     
     const latInput = document.getElementById('latitude')?.value || '';
     const lonInput = document.getElementById('longitude')?.value || '';
@@ -1576,9 +1716,7 @@ window.abrirGeoModal = function() {
             const modalSearchInput = document.getElementById('modal-search-input');
             if (modalSearchInput) {
                 modalSearchInput.value = cepStr;
-                if (typeof window.buscarNoModal === 'function') {
-                    window.buscarNoModal();
-                }
+                window.buscarNoModal();
             }
         }
     }
@@ -1586,30 +1724,8 @@ window.abrirGeoModal = function() {
 
 // =========================================================================
 // LÓGICA DE SALVAMENTO E MANIFESTAÇÃO (ABA 2)
+// Removida: O salvamento agora é delegado inteiramente ao HTMX (hx-post)
 // =========================================================================
-
-const formReq2 = document.getElementById("form02") || document.querySelector("form");
-if (formReq2) {
-  formReq2.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const btn = formReq2.querySelector('button[type="submit"]');
-    if (btn) {
-      btn.disabled = true;
-      const orig = btn.innerHTML;
-      btn.innerHTML = 'Salvando...';
-      const sucesso = await executarSalvamentoAba2();
-      if (sucesso) {
-        formReq2.submit(); // Envia para o Laravel (ProcessoController::tramitar)
-      } else {
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      }
-    } else {
-      const sucesso = await executarSalvamentoAba2();
-      if (sucesso) formReq2.submit();
-    }
-  });
-}
 let ultimoRelatorioSalvoAba2 = {};
 
 async function executarSalvamentoAba2() {
@@ -1627,10 +1743,13 @@ async function executarSalvamentoAba2() {
   });
 
   if (!allCompleted) {
-    alert(`Atenção: Os seguintes RIPs estão com o diagnóstico pendente: ${pendingRips.join(', ')}. Por favor, responda se há inconsistências cadastrais em cada um deles antes de salvar.`);
-    return false;
+    // Permitir salvar rascunho mesmo com RIPs pendentes
+    // alert(`Atenção: Os seguintes RIPs estão com o diagnóstico pendente: ${pendingRips.join(', ')}. Por favor, responda se há inconsistências cadastrais em cada um deles antes de salvar.`);
+    // return false;
   }
 
+  // Permitir salvar rascunho ignorando campos obrigatórios não preenchidos
+  /*
   if (formReq2 && !formReq2.checkValidity()) {
     formReq2.reportValidity();
     const invalidField = formReq2.querySelector(":invalid");
@@ -1640,108 +1759,71 @@ async function executarSalvamentoAba2() {
     alert("Atenção: Existem campos obrigatórios não preenchidos (ex: Situação Ocupacional). Por favor, preencha-os antes de salvar.");
     return false;
   }
+  */
 
-  const processId = localStorage.getItem("CURRENT_PROCESS_ID");
-  if (window.parent) {
-    try {
-      // Força a atualização do formDataState global do sync.js
-      if (typeof window.parent.forceSaveDraft === "function") {
-        await window.parent.forceSaveDraft();
+  const form = document.getElementById("form02");
+  if (!form) return false;
+  
+  // Extrai o ID do processo diretamente da URL da action do form (/processos/{id}/tramitar)
+  const actionUrl = form.getAttribute("action") || "";
+  const match = actionUrl.match(/\/processos\/(\d+)/);
+  const processId = match ? match[1] : null;
+  
+  if (!processId) {
+      console.error("❌ Não foi possível extrair o ID do processo da action do formulário.");
+      return false;
+  }
+
+  const formData = new FormData(form);
+  const dataObj = {};
+  for (let [key, value] of formData.entries()) {
+      if (key === '_token' || key === 'aba_atual' || key === 'next_aba') continue;
+      
+      // Remove o sufixo [] para bater com a estrutura esperada no backend/Blade
+      const cleanKey = key.endsWith('[]') ? key.slice(0, -2) : key;
+      
+      if (dataObj[cleanKey] !== undefined) {
+          if (!Array.isArray(dataObj[cleanKey])) dataObj[cleanKey] = [dataObj[cleanKey]];
+          dataObj[cleanKey].push(value);
+      } else {
+          dataObj[cleanKey] = value;
       }
+  }
 
-      // Coletar dados para o Relatório da Aba 2
-      const formDataState = window.parent.formDataState || {};
+  const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
+             || document.querySelector('input[name="_token"]')?.value;
 
-      ultimoRelatorioSalvoAba2 = {
-        tem_matricula: formDataState["imoveis[0][processo_incorporacao]"] || formDataState["tem_matricula"] || "",
-        num_matricula: formDataState["imoveis[0][matricula]"] || formDataState["matricula"] || formDataState["num_matricula"] || "",
-        cartorio_matricula: formDataState["imoveis[0][cartorio]"] || formDataState["cartorio"] || formDataState["cartorio_matricula"] || "",
-
-        situacao_ocupacional: formDataState["situacao_ocupacional"] || "",
-        uso_principal: formDataState["uso_principal"] || "",
-
-        condicao_urbanizacao: formDataState["imoveis[0][condicao_urbanizacao]"] || formDataState["condicao_urbanizacao"] || "",
-
-        incidencia_ambiental:
-          formDataState["incidencia_ambiental[]"] ||
-          formDataState["incidencia_ambiental"] ||
-          [],
-        obs_incidencia_ambiental:
-          formDataState["obs_incidencia_ambiental"] || "",
-
-        ha_riscos:
-          formDataState["ha_riscos[]"] || formDataState["ha_riscos"] || "",
-        riscos: formDataState["riscos[]"] || formDataState["riscos"] || [],
-        obs_riscos: formDataState["obs_riscos"] || "",
-
-        ha_restricoes:
-          formDataState["ha_restricoes[]"] ||
-          formDataState["ha_restricoes"] ||
-          "",
-        restricoes:
-          formDataState["restricoes[]"] || formDataState["restricoes"] || [],
-        obs_restricoes: formDataState["obs_restricoes"] || "",
-
-        observacoes_aba2: formDataState["observacoes_aba2"] || "",
-      };
-
-      const urlRel = `${window.parent.SUPABASE_URL}/rest/v1/tabela_relatorios?on_conflict=process_id,aba`;
-      const payloadRel = {
-        process_id: processId,
-        aba: "aba2",
-        dados_relatorio: ultimoRelatorioSalvoAba2,
-        updated_at: new Date().toISOString(),
-      };
-
-      await fetch(urlRel, {
-        method: "POST",
-        headers: {
-          apikey: window.parent.SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}`,
-          "Content-Type": "application/json",
-          Prefer: "resolution=merge-duplicates",
-        },
-        body: JSON.stringify(payloadRel),
-      });
-
-      // --- VERSIONAMENTO: gravar snapshot na tabela_versoes_formulario ---
-      try {
-        const urlVersoes = `${window.parent.SUPABASE_URL}/rest/v1/tabela_versoes_formulario`;
-        const urlUltimaVersao = `${urlVersoes}?processo_id=eq.${encodeURIComponent(processId)}&aba=eq.aba2&order=versao.desc&limit=1`;
-        const resUltima = await fetch(urlUltimaVersao, {
-          headers: { apikey: window.parent.SUPABASE_ANON_KEY, Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}` }
-        });
-        const arrUltima = await resUltima.json();
-        const proximaVersao = (arrUltima.length > 0 ? arrUltima[0].versao : 0) + 1;
-
-        await fetch(urlVersoes, {
-          method: "POST",
+  try {
+      const res = await fetch('/draft/save', {
+          method: 'POST',
           headers: {
-            apikey: window.parent.SUPABASE_ANON_KEY,
-            Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json"
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': token,
+              'Accept': 'application/json'
           },
           body: JSON.stringify({
-            processo_id: processId,
-            aba: "aba2",
-            versao: proximaVersao,
-            dados_json: ultimoRelatorioSalvoAba2,
-            criado_por: localStorage.getItem("CURRENT_USER_PROFILE") || "SISTEMA"
+              processo_id: processId,
+              aba: "2",
+              data: dataObj
           })
-        });
-        console.log(`✅ [foco-02] Versão ${proximaVersao} gravada em tabela_versoes_formulario`);
-      } catch (errVersao) {
-        console.warn("⚠️ [foco-02] Erro ao gravar versão (não bloqueia):", errVersao);
+      });
+      
+      if (res.ok) {
+          alert("Rascunho da Aba 2 salvo com sucesso!");
+          return true;
+      } else {
+          console.error("❌ Erro ao salvar rascunho da Aba 2", await res.text());
+          alert("Erro ao salvar rascunho. Tente novamente.");
+          return false;
       }
-
-      return true;
-    } catch (err) {
-      console.error("❌ [foco-02] Erro durante o salvamento:", err);
+  } catch (err) {
+      console.error("❌ [foco-02] Erro de conexão ao salvar rascunho:", err);
+      alert("Erro de conexão ao salvar rascunho.");
       return false;
-    }
   }
-  return false;
 }
+
+window._saveDraft = executarSalvamentoAba2;
 
 const btnSalvarRelatorio = document.getElementById("btnSalvarRelatorio");
 const btnManifestacao = document.getElementById("btnManifestacao");

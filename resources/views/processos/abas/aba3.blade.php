@@ -1,5 +1,18 @@
+<script>
+    window.INLINE_SOLICITACAO_RIP = @json($dados['solicitacao_criacao_rip'] ?? ($processo->foco?->aba1?->solicitacao_criacao_rip ?? ''));
+    window.INLINE_SOLICITACAO_ANEXOS = @json($dados['solicitacao_anexos'] ?? []);
+</script>
 <link rel="stylesheet" href="{{ asset('css/custom-select.css') }}">
 <style>
+  .accordion-icon {
+    font-size: 0.9rem;
+    color: white !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+  }
+  .active .accordion-icon {
+    transform: rotate(90deg);
+  }
   .consolidated-box {
     background-color: #f1f5f9;
     border-left: 4px solid #0056b3;
@@ -81,7 +94,7 @@
     flex-shrink: 0;
   }
   .acordeao-wrapper.aberto .acordeao-seta {
-    transform: rotate(180deg);
+    transform: rotate(90deg);
   }
   .acordeao-corpo {
     display: none;
@@ -231,21 +244,53 @@
   }
 </style>
 
-<div class="form-container">
+<div id="aba3-container" class="form-container">
   <h2>Análise de Viabilidade e Proposta de Destinação</h2>
-  <form method="POST" action="{{ route('processos.tramitar', $processo->id) }}" id="form03">
+  <form action="{{ route('processos.tramitar', $processo->id) }}" method="POST" hx-post="{{ route('processos.tramitar', $processo->id) }}" hx-target="#aba3-container" hx-indicator="#form-indicator-aba3" id="form03">
+      <div id="form-indicator-aba3" class="htmx-indicator" style="display:none; color: #475569; margin-bottom: 10px;">⏳ Processando...</div>
       @csrf
       <input type="hidden" name="aba_atual" value="3">
       <input type="hidden" name="next_aba" value="index">
+
+            <!-- Bloco Retornar Processo -->
+            @if($processo->tramitacao === 'Devolvido')
+                @if(isset($respostaDevolucao))
+                <div id="blocoRespostaDevolutivaAba3" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">✅ Retornar Processo</h4>
+                    <p style="margin-bottom: 10px; font-size: 0.9em; color: #166534;">
+                        Justificativa preenchida por <strong>{{ $respostaDevolucao['usuario'] }}</strong> em {{ $respostaDevolucao['data'] }}
+                    </p>
+                    <div style="width: 100%; min-height: 80px; padding: 15px; border: 1px solid #86efac; border-radius: 4px; background-color: #f8fafc; font-family: inherit; font-size: 14px; color: #334155; white-space: pre-wrap;">{{ $respostaDevolucao['texto'] }}</div>
+                </div>
+                @else
+                <div id="blocoRespostaDevolutivaAba3" class="editavel" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">Retornar Processo</h4>
+                    <label for="resposta_devolucao" style="font-weight: bold; color: #166534;">Descreva o que foi corrigido ou complementado nesta etapa (Obrigatório para enviar):</label>
+                    <textarea id="resposta_devolucao" name="resposta_devolucao" required style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #86efac; border-radius: 4px; margin-top: 10px; font-family: inherit; font-size: 14px;">{{ $dados['resposta_devolucao'] ?? '' }}</textarea>
+                </div>
+                @endif
+            @endif
+
+      @if ($errors->any())
+          <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+              <h4 style="color: #b91c1c; margin-top: 0; margin-bottom: 10px;">⚠️ Atenção: Não foi possível salvar devido aos seguintes erros:</h4>
+              <ul style="color: #991b1b; margin-bottom: 0; padding-left: 20px;">
+                  @foreach ($errors->all() as $error)
+                      <li>{{ $error }}</li>
+                  @endforeach
+              </ul>
+          </div>
+      @endif
+
       <!-- ========== ACCORDIONS DE REVISÃO (ABAS 1 E 2) ========== -->
         <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
           <!-- ABA 1a - Dados do Requerimento -->
-          <div style="border: 2px solid #1e3a5f; border-radius: 8px; overflow: hidden; background: #fff;">
-            <div style="background-color: #1e3a5f; color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em;" onclick="const body = this.nextElementSibling; const icon = this.querySelector('span:last-child'); if(body.style.display === 'none'){ body.style.display = 'block'; icon.style.transform = 'rotate(180deg)'; } else { body.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }">
-              <span>📋 Dados do Requerimento</span>
-              <span style="transition: transform 0.3s; font-size: 1.2em;">▼</span>
+          <div class="accordion-item" style="border: none;">
+            <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+              <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📋 Dados do Requerimento</span>
+              <span class="accordion-icon">▶</span>
             </div>
-            <div style="padding: 20px; display: none; border-top: 1px solid #cbd5e1; background: #fff;">
+            <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
               @php $req = $requerimento ?? null; @endphp
               <div style="display:flex;flex-direction:column;">
                 <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Nome do Requerente:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $req?->nome_requerente ?? '-' }}</span></div>
@@ -271,12 +316,15 @@
           </div>
 
           <!-- ABA 1b - Indicação do Imóvel -->
-          <div style="border: 2px solid #1e3a5f; border-radius: 8px; overflow: hidden; background: #fff;">
-            <div style="background-color: #1e3a5f; color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em;" onclick="const body = this.nextElementSibling; const icon = this.querySelector('span:last-child'); if(body.style.display === 'none'){ body.style.display = 'block'; icon.style.transform = 'rotate(180deg)'; } else { body.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }">
-              <span>📋 RIP(s) ou Cadastro(s) Mínimo(s)</span>
-              <span style="transition: transform 0.3s; font-size: 1.2em;">▼</span>
+          <!-- Bloco de Solicitação de Criação de RIP -->
+          <div id="container-solicitacao-criacao-rip" style="display: none; margin-bottom: 12px; width: 100%;"></div>
+
+          <div class="accordion-item" style="border: none;">
+            <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+              <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📋 RIP(s) ou Cadastro(s) Mínimo(s)</span>
+              <span class="accordion-icon">▶</span>
             </div>
-            <div style="padding: 20px; display: none; border-top: 1px solid #cbd5e1; background: #fff;">
+            <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
               @php
                 $focoRips = $processo->foco?->rips ?? collect();
                 $focoCadastros = $processo->foco?->cadastrosMinimos ?? collect();
@@ -350,13 +398,14 @@
                     let dadosSPU = {};
                     try { if (typeof window.fetchSPU === 'function') dadosSPU = await window.fetchSPU(rip); } catch(e) {}
                     const block = document.createElement('div');
-                    block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-                    block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>🏠 Imóvel (RIP): ${rip}</span><span style="transition:transform 0.2s;">▼</span></div>
-                    <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">
+                    block.className = 'accordion-item';
+                block.style.cssText = 'border:none;margin-bottom:8px;';
+                    block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)"><span class="accordion-title" style="font-weight: 600; color: #ffffff;">🏠 Imóvel (RIP): ${rip}</span><span class="accordion-icon">▶</span></div>
+                    <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">
                       ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-                      ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                       ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
                       ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+                      ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                       ${buildField('CEP', dadosSPU.cep)}
                       ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
                       ${buildField('Bairro', dadosSPU.bairro)}
@@ -379,9 +428,10 @@
     
                   cadastros.forEach((cad, idx) => {
                     const block = document.createElement('div');
-                    block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-                    block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span><span style="transition:transform 0.2s;">▼</span></div>
-                    <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">${buildField('CEP',cad.cep)}${buildField('Área (m²)',cad.area)}${buildField('Logradouro',cad.logradouro||cad.endereco)}${buildField('Município/UF',(cad.municipio||'')+' / '+(cad.uf||''))}</div></div>`;
+                    block.className = 'accordion-item';
+                block.style.cssText = 'border:none;margin-bottom:8px;';
+                    block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)"><span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span><span class="accordion-icon">▶</span></div>
+                    <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">${buildField('CEP',cad.cep)}${buildField('Área (m²)',cad.area)}${buildField('Logradouro',cad.logradouro||cad.endereco)}${buildField('Município/UF',(cad.municipio||'')+' / '+(cad.uf||''))}</div></div>`;
                     container.appendChild(block);
                   });
                 });
@@ -390,13 +440,12 @@
                 {{-- RIPs já disponíveis no MySQL --}}
                 <div style="display: flex; flex-direction: column; gap: 10px;" id="rips-aba3-mysql">
                   @foreach($focoRips as $rip)
-                  <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
-                      <span>🏠 Imóvel (RIP): {{ $rip->numero_rip }}</span>
-                      <span style="transition:transform 0.2s;">▼</span>
+                  <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;">
+                    <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                      <span class="accordion-title" style="font-weight: 600; color: #ffffff;">🏠 Imóvel (RIP): {{ $rip->numero_rip }}</span><span class="accordion-icon">▶</span>
                     </div>
                     <div style="padding:16px;display:none;background:#fff;" id="rip-spu-aba3-{{ $loop->index }}">
-                      <p style="color:#64748b;font-style:italic;font-size:0.85rem;">Carregando dados do SPU...</p>
+                      <p style="color:#64748b; font-size: 0.9em; font-style: italic;">Carregando dados SPU...</p>
                     </div>
                   </div>
                   <script>
@@ -405,11 +454,11 @@
                       let d = {};
                       try { if (typeof window.fetchSPU === 'function') d = await window.fetchSPU('{{ $rip->numero_rip }}'); } catch(e) {}
                       function f(l,v){return `<div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">${l}:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">${v||'-'}</span></div>`;}
-                      el.innerHTML = `<div>
-                        ${f('Conceituação do Imóvel', d.conceituacao)}
-                        ${f('Condição de Urbanização', d.condicao_urbanizacao)}
-                        ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
-                        ${f('Tipo de Imóvel', d.tipo_imovel)}
+                      el.innerHTML = `<div style="display:flex;flex-direction:column;">
+                          ${f('Conceituação do Imóvel', d.conceituacao)}
+                          ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
+                          ${f('Tipo de Imóvel', d.tipo_imovel)}
+                          ${f('Condição de Urbanização', d.condicao_urbanizacao)}
                         ${f('CEP', d.cep)}
                         ${f('Logradouro', d.logradouro || d.endereco)}
                         ${f('Bairro', d.bairro)}
@@ -432,9 +481,8 @@
                   @endforeach
                   @foreach($focoCadastros as $idx => $cad)
                   <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
-                      <span>📝 Cadastro Mínimo #{{ $idx+1 }} (Sem RIP)</span>
-                      <span style="transition:transform 0.2s;">▼</span>
+                    <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                      <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #{{ $idx+1 }} (Sem RIP)</span><span class="accordion-icon">▶</span>
                     </div>
                     <div style="padding:16px;display:none;background:#fff;">
                       <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">CEP:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->cep ?? '-' }}</span></div>
@@ -450,12 +498,12 @@
           </div>
 
           <!-- ABA 2 -->
-          <div style="border: 2px solid #1e3a5f; border-radius: 8px; overflow: hidden; background: #fff;">
-            <div style="background-color: #1e3a5f; color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em;" onclick="const body = this.nextElementSibling; const icon = this.querySelector('span:last-child'); if(body.style.display === 'none'){ body.style.display = 'block'; icon.style.transform = 'rotate(180deg)'; } else { body.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }">
-              <span>📋 Diagnóstico preliminar do imóvel</span>
-              <span style="transition: transform 0.3s; font-size: 1.2em;">▼</span>
+          <div class="accordion-item" style="border: none;">
+            <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+              <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📋 Diagnóstico preliminar do imóvel</span>
+              <span class="accordion-icon">▶</span>
             </div>
-            <div style="padding: 20px; display: none; border-top: 1px solid #cbd5e1; background: #fff;">
+            <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
               @php
                 $aba2 = $processo->foco?->aba2;
               @endphp
@@ -470,7 +518,7 @@
                   <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Há Incidência Ambiental?</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($aba2->ha_incidencia) ? implode(', ', $aba2->ha_incidencia) : ($aba2->ha_incidencia ?? '-') }}</span></div>
                   <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Há Riscos?</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($aba2->ha_riscos) ? implode(', ', $aba2->ha_riscos) : ($aba2->ha_riscos ?? '-') }}</span></div>
                   <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Há Restrições?</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($aba2->ha_restricoes) ? implode(', ', $aba2->ha_restricoes) : ($aba2->ha_restricoes ?? '-') }}</span></div>
-                  <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Localização Estratégica (Lat/Long):</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $aba2->latitude ?? '-' }} / {{ $aba2->longitude ?? '-' }}</span></div>
+                  <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Coordenadas Geográficas (Lat/Long):</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $aba2->latitude ?? '-' }} / {{ $aba2->longitude ?? '-' }}</span></div>
                 </div>
               @endif
             </div>
@@ -490,6 +538,7 @@
   @endphp
   <fieldset @if(!$canEditAba3) disabled @endif>
 
+        @if($processo->tramitacao !== 'Devolvido')
         <!-- ========== ACCORDION DEVOLUÇÃO ========== -->
         <style>
           .accordion-container-dev { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
@@ -499,74 +548,79 @@
           .accordion-body-dev { display: none; padding: 20px; border-top: 1px solid #fda4af; }
           .accordion-body-dev.active-dev { display: block; background: #fff1f2; }
           .accordion-icon-dev { font-size: 1.2em; color: #be123c !important; transition: transform 0.3s; }
-          .active-dev .accordion-icon-dev { transform: rotate(180deg); }
+          .active-dev .accordion-icon-dev { transform: rotate(90deg); }
         </style>
         <div class="accordion-container-dev">
           <div class="accordion-item-dev">
             <div class="accordion-header-dev" onclick="this.nextElementSibling.classList.toggle('active-dev'); this.classList.toggle('active-dev');">
               <span>⚠️ Devolver Processo</span>
-              <span class="accordion-icon-dev">▼</span>
+              <span class="accordion-icon-dev">▶</span>
 
             </div>
-            <div class="accordion-body-dev">
+            <div class="accordion-body-dev editavel">
               <label for="motivo_devolucao_rapida" style="color: #9f1239; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px;">Motivo (Obrigatório):</label>
-              <textarea id="motivo_devolucao_rapida" placeholder="Justifique a devolução..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #fecdd3; border-radius: 4px; margin-bottom: 15px; font-family: inherit; box-sizing: border-box;"></textarea>
+              <textarea id="motivo_devolucao_rapida" name="motivo_devolucao" placeholder="Justifique a devolução..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #fecdd3; border-radius: 4px; margin-bottom: 15px; font-family: inherit; box-sizing: border-box;"></textarea>
 
               <p style="margin-top: 0; margin-bottom: 10px; color: #9f1239; font-weight: bold;">Para qual fase o processo deve retornar?</p>
               <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button type="button" class="btnEnviarDevolucaoRapida" data-workflow="12" style="flex: 1; min-width: 200px; background-color: #be123c; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(190, 18, 60, 0.2);">🔙 Indicação do Imóvel</button>
-                <button type="button" class="btnEnviarDevolucaoRapida" data-workflow="13" style="flex: 1; min-width: 200px; background-color: #9f1239; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(159, 18, 57, 0.2);">🔙 Diagnóstico Preliminar</button>
+                <button type="button" 
+                        onclick="enviarDevolucao(1)"
+                        class="btnEnviarDevolucaoRapida" 
+                        style="flex: 1; min-width: 200px; background-color: #be123c; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(190, 18, 60, 0.2);">
+                    🔙 Indicação do Imóvel
+                </button>
+                <button type="button" 
+                        onclick="enviarDevolucao(2)"
+                        class="btnEnviarDevolucaoRapida" 
+                        style="flex: 1; min-width: 200px; background-color: #9f1239; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(159, 18, 57, 0.2);">
+                    🔙 Diagnóstico Preliminar
+                </button>
               </div>
             </div>
+            
+            <script>
+            function enviarDevolucao(aba) {
+                const motivo = document.getElementById('motivo_devolucao_rapida').value;
+                if(!motivo.trim()) {
+                    alert("O motivo da devolução é obrigatório. Por favor, justifique antes de enviar.");
+                    return;
+                }
+                
+                const botoes = document.querySelectorAll('.btnEnviarDevolucaoRapida');
+                botoes.forEach(b => { b.disabled = true; b.style.opacity = '0.7'; b.innerHTML = '⏳ Devolvendo...'; });
+
+                fetch("{{ route('processos.devolver', $processo->id) }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                        "Accept": "application/json",
+                        "HX-Request": "true"
+                    },
+                    body: JSON.stringify({
+                        aba: aba,
+                        motivo_devolucao: motivo
+                    })
+                }).then(res => {
+                    if(res.ok && res.headers.has('HX-Redirect')) {
+                        window.location.href = res.headers.get('HX-Redirect');
+                    } else if(res.redirected) {
+                        window.location.href = res.url;
+                    } else {
+                        window.location.href = "{{ route('processos.index') }}";
+                    }
+                }).catch(err => {
+                    console.error("Erro na devolução:", err);
+                    alert("Ocorreu um erro ao devolver o processo.");
+                    botoes.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+                });
+            }
+            </script>
           </div>
         </div>
+        @endif
 
-        <script>
-          document.querySelectorAll('.btnEnviarDevolucaoRapida').forEach(btn => {
-            btn.addEventListener('click', function() {
-              const motivo = document.getElementById('motivo_devolucao_rapida').value.trim();
-              if (!motivo) {
-                alert('Por favor, preencha o motivo da devolução antes de clicar.');
-                return;
-              }
-
-              const workflowId = parseInt(this.getAttribute('data-workflow'));
-              // workflow 12 -> aba 1, workflow 13 -> aba 2
-              const abaDevolucao = workflowId === 12 ? 1 : 2;
-              
-              // Desabilita os botões para evitar duplo clique
-              document.querySelectorAll('.btnEnviarDevolucaoRapida').forEach(b => b.disabled = true);
-              this.innerHTML = '⏳ Enviando...';
-              
-              // Create dynamic form to POST to devolver route
-              const form = document.createElement('form');
-              form.method = 'POST';
-              form.action = "{{ route('processos.devolver', $processo->id) }}";
-              
-              const csrfToken = document.querySelector('input[name="_token"]').value;
-              const inputToken = document.createElement('input');
-              inputToken.type = 'hidden';
-              inputToken.name = '_token';
-              inputToken.value = csrfToken;
-              form.appendChild(inputToken);
-
-              const inputMotivo = document.createElement('input');
-              inputMotivo.type = 'hidden';
-              inputMotivo.name = 'motivo_devolucao';
-              inputMotivo.value = motivo;
-              form.appendChild(inputMotivo);
-
-              const inputAba = document.createElement('input');
-              inputAba.type = 'hidden';
-              inputAba.name = 'aba';
-              inputAba.value = abaDevolucao;
-              form.appendChild(inputAba);
-              
-              document.body.appendChild(form);
-              form.submit();
-            });
-          });
-        </script>
+        
         <!-- ========================================================== -->
 
         <!-- Dados do Destinatário -->
@@ -857,9 +911,9 @@
                 name="destinacao_ativa"
                 value="Sim"
                 onclick="
-                  document.getElementById(
-                    'bloco-destinacao-ativa',
-                  ).style.display = 'flex'
+                  var b=document.getElementById('bloco-destinacao-ativa');
+                  b.style.display='flex';
+                  document.getElementById('contratos_destinacao_ativa').placeholder='Dados de destinações/contratos/instrumentos já formalizados pelo destinatário com a SPU (dados vindos do MGC/módulo de Destinação)';
                 "
               {{ isset($dados['destinacao_ativa']) && $dados['destinacao_ativa'] == 'Sim' ? 'checked' : '' }}>
               Sim</label
@@ -894,7 +948,7 @@
               id="contratos_destinacao_ativa"
               name="contratos_destinacao_ativa"
               rows="4"
-              placeholder="Ex: Contrato de Cessão de Uso nº 001/2020, vigêencia até 12/2025..."
+              placeholder="Dados de destinações/contratos/instrumentos já formalizados pelo destinatário com a SPU (dados vindos do MGC/módulo de Destinação)"
             >{{ $dados['contratos_destinacao_ativa'] ?? '' }}</textarea>
           </div>
         </div>
@@ -1006,9 +1060,9 @@
           >
           <select id="capacidade_fin" name="capacidade_fin" required data-selected="{{ $dados['capacidade_fin'] ?? '' }}">
             <option value="">Selecione...</option>
-            <option value="demonstrada">Demonstrada formalmente</option>
-            <option value="não demonstrada">Não demonstrada</option>
-            <option value="não se aplica">Não se aplica</option>
+            <option value="Demonstrada formalmente">Demonstrada formalmente</option>
+            <option value="Não demonstrada">Não demonstrada</option>
+            <option value="Não se aplica">Não se aplica</option>
           </select>
         </div>
 
@@ -1055,8 +1109,8 @@
           >{{ $dados['descricao_acao'] ?? '' }}</textarea>
         </div>
 
-        <!-- Dados de Comparação de Área e Valor -->
-        <h4 class="section-title">Dados de Comparação de Área e Valor:</h4>
+        <!-- Dados de Área e Valor do Imóvel a ser Destinado -->
+        <h4 class="section-title">Dados de Área e Valor do Imóvel a ser Destinado:</h4>
         <div
           class="form-group editavel"
           style="
@@ -1867,6 +1921,7 @@
             min="0"
             autocomplete="off"
             required
+            value="{{ $dados['num_beneficiarios'] ?? '' }}"
           />
           <span class="error-msg" id="err59" style="display: none"
             >Informe o nmero de beneficirios (mnimo 0).</span
@@ -1976,116 +2031,47 @@
             required
             data-no-custom
            data-selected="{{ $dados['regime_destinacao'] ?? '' }}">
-            <option value="">Selecione...</option>
-
-            <option
-              value="Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)"
-            >
-              Acordo de Cooperação Técnica para Regularização Fundiária Urbana
-              (ACT-Reurb)
-            </option>
-            <option value="Afetação">Afetação</option>
+            <option value="">Selecione um regime...</option>
+            <option value="Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)">Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)</option>
             <option value="Aforamento gratuito">Aforamento gratuito</option>
             <option value="Aforamento oneroso">Aforamento oneroso</option>
             <option value="Arrendamento">Arrendamento</option>
             <option value="Autorização de obras">Autorização de obras</option>
-            <option value="Autorização de passagem gratuita">
-              Autorização de passagem gratuita
-            </option>
-            <option value="Autorização de passagem onerosa">
-              Autorização de passagem onerosa
-            </option>
-            <option value="Autorização de uso para fins comerciais">
-              Autorização de uso para fins comerciais
-            </option>
-            <option value="Autorização de uso sustentável">
-              Autorização de uso sustentável
-            </option>
-
-            <option
-              value="Cessão de Uso gratuita a entidade s/ fins lucrativos"
-            >
-              Cessão de Uso gratuita a entidade s/ fins lucrativos
-            </option>
-            <option value="Cessão de uso em condições especiais">
-              Cessão de uso em condições especiais
-            </option>
-            <option value="Cessão de uso gratuita">
-              Cessão de uso gratuita
-            </option>
+            <option value="Autorização de passagem gratuita">Autorização de passagem gratuita</option>
+            <option value="Autorização de passagem onerosa">Autorização de passagem onerosa</option>
+            <option value="Autorização de uso para fins comerciais">Autorização de uso para fins comerciais</option>
+            <option value="Autorização de uso sustentável">Autorização de uso sustentável</option>
+            <option value="Cessão de uso em condições especiais">Cessão de uso em condições especiais</option>
+            <option value="Cessão de uso gratuita">Cessão de uso gratuita</option>
             <option value="Cessão de uso onerosa">Cessão de uso onerosa</option>
-            <option value="Cessão de uso provisória">
-              Cessão de uso provisória
-            </option>
-
-            <option value="Concessão de Direito de Superfície Gratuita">
-              Concessão de Direito de Superfície Gratuita
-            </option>
-            <option value="Concessão de Direito de Superfície Onerosa">
-              Concessão de Direito de Superfície Onerosa
-            </option>
-            <option value="Concessão de Direito Real de Laje Gratuita">
-              Concessão de Direito Real de Laje Gratuita
-            </option>
-            <option value="Concessão de Direito Real de Laje Onerosa">
-              Concessão de Direito Real de Laje Onerosa
-            </option>
-            <option value="Concessão de Direito Real de Uso Gratuita">
-              Concessão de Direito Real de Uso Gratuita
-            </option>
-            <option value="Concessão de Direito Real de Uso Onerosa">
-              Concessão de Direito Real de Uso Onerosa
-            </option>
-            <option
-              value="Concessão de uso especial para fins de moradia (CUEM)"
-            >
-              Concessão de uso especial para fins de moradia (CUEM)
-            </option>
-
+            <option value="Cessão de uso provisória">Cessão de uso provisória</option>
+            <option value="Concessão de Direito de Superfície Gratuita">Concessão de Direito de Superfície Gratuita</option>
+            <option value="Concessão de Direito de Superfície Onerosa">Concessão de Direito de Superfície Onerosa</option>
+            <option value="Concessão de Direito Real de Laje Gratuita">Concessão de Direito Real de Laje Gratuita</option>
+            <option value="Concessão de Direito Real de Laje Onerosa">Concessão de Direito Real de Laje Onerosa</option>
+            <option value="Concessão de Direito Real de Uso Gratuita">Concessão de Direito Real de Uso Gratuita</option>
+            <option value="Concessão de Direito Real de Uso Onerosa">Concessão de Direito Real de Uso Onerosa</option>
+            <option value="Concessão de uso especial para fins de moradia (CUEM)">Concessão de uso especial para fins de moradia (CUEM)</option>
             <option value="Dação em pagamento">Dação em pagamento</option>
-            <option value="Declaração de Interesse do Serviço Público">
-              Declaração de Interesse do Serviço Público
-            </option>
+            <option value="Declaração de Interesse do Serviço Publico">Declaração de Interesse do Serviço Publico</option>
             <option value="Doação">Doação</option>
             <option value="Entrega">Entrega</option>
             <option value="Entrega provisória">Entrega provisória</option>
             <option value="Guarda Provisória">Guarda Provisória</option>
             <option value="Inscrição de ocupação">Inscrição de ocupação</option>
-            <option
-              value="Integralização de cotas em Fundo de Investimento Imobiliário"
-            >
-              Integralização de cotas em Fundo de Investimento Imobiliário
-            </option>
+            <option value="Integralização de cotas em Fundo de Investimento Imobiliário">Integralização de cotas em Fundo de Investimento Imobiliário</option>
             <option value="Investidura">Investidura</option>
-            <option value="Locação para terceiros">
-              Locação para terceiros
-            </option>
-            <option value="Permissão de uso para eventos de curta duração">
-              Permissão de uso para eventos de curta duração
-            </option>
-            <option value="Permissão de uso para fins residenciais">
-              Permissão de uso para fins residenciais
-            </option>
+            <option value="Locação para terceiros">Locação para terceiros</option>
+            <option value="Permissão de uso para eventos de curta duração">Permissão de uso para eventos de curta duração</option>
+            <option value="Permissão de uso para fins residenciais">Permissão de uso para fins residenciais</option>
             <option value="Permuta">Permuta</option>
-            <option value="Promessa de compra e venda">
-              Promessa de compra e venda
-            </option>
+            <option value="Promessa de compra e venda">Promessa de compra e venda</option>
             <option value="Remição do foro">Remição do foro</option>
-            <option value="Transferência de gestão de orlas e praias">
-              Transferência de gestão de orlas e praias
-            </option>
-            <option value="Transferência de direito real de uso para Reurb-S">
-              Transferência de direito real de uso para Reurb-S
-            </option>
-            <option value="Transferência de propriedade para fins de Reurb-S">
-              Transferência de propriedade para fins de Reurb-S
-            </option>
-            <option value="Transferência gratuita da posse">
-              Transferência gratuita da posse
-            </option>
-            <option value="Transferência onerosa da posse">
-              Transferência onerosa da posse
-            </option>
+            <option value="Transferência de gestão de orlas e praias">Transferência de gestão de orlas e praias</option>
+            <option value="Transferência de direito real de uso para Reurb-S">Transferência de direito real de uso para Reurb-S</option>
+            <option value="Transferência de propriedade para fins de Reurb-S">Transferência de propriedade para fins de Reurb-S</option>
+            <option value="Transferência gratuita da posse">Transferência gratuita da posse</option>
+            <option value="Transferência onerosa da posse">Transferência onerosa da posse</option>
             <option value="Venda">Venda</option>
           </select>
 
@@ -2105,6 +2091,71 @@
         <!-- btnConfirmarAprovacao removido pois submissão é via Salvar e Enviar -->
 
         <!-- Botão Salvar e Enviar -->
+        <!-- Bloco Resposta à Devolutiva -->
+        @if($processo->tramitacao === 'Devolvido')
+        <div id="blocoRespostaDevolutivaAba3" class="editavel" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-top: 30px; margin-bottom: 10px;">
+            <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">Resposta à Devolutiva</h4>
+            <label for="resposta_devolucao" style="font-weight: bold; color: #166534;">Descreva o que foi corrigido ou complementado nesta etapa (Obrigatório para enviar):</label>
+            <textarea id="resposta_devolucao" name="resposta_devolucao" required style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #86efac; border-radius: 4px; margin-top: 10px; font-family: inherit; font-size: 14px;">{{ $dados['resposta_devolucao'] ?? '' }}</textarea>
+        </div>
+        @endif
+
+        <script>
+        window._saveDraft = async function() {
+            const form = document.getElementById('form03');
+            if (!form) return;
+            
+            const btn = document.querySelector('button[onclick*="_saveDraft()"]');
+            const origText = btn ? btn.innerHTML : "Salvar Rascunho";
+            if(btn) btn.innerHTML = "⏳ Salvando...";
+            
+            const formData = new FormData(form);
+            const dataObj = {};
+            for (let [key, value] of formData.entries()) {
+                if (key === '_token' || key === 'aba_atual' || key === 'next_aba') continue;
+                
+                // Remove o sufixo [] para bater com a estrutura esperada no backend/Blade
+                const cleanKey = key.endsWith('[]') ? key.slice(0, -2) : key;
+                
+                if (dataObj[cleanKey] !== undefined) {
+                    if (!Array.isArray(dataObj[cleanKey])) dataObj[cleanKey] = [dataObj[cleanKey]];
+                    dataObj[cleanKey].push(value);
+                } else {
+                    dataObj[cleanKey] = value;
+                }
+            }
+            
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || document.querySelector('input[name="_token"]')?.value;
+            const processId = "{{ $processo->id }}";
+            
+            try {
+                const res = await fetch('/draft/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        processo_id: processId,
+                        aba: "3",
+                        data: dataObj
+                    })
+                });
+                
+                if (res.ok) {
+                    alert("Rascunho da Aba 3 salvo com sucesso!");
+                } else {
+                    alert("Erro ao salvar rascunho. Tente novamente.");
+                }
+            } catch(e) {
+                console.error("Erro no rascunho:", e);
+                alert("Erro de conexão ao salvar rascunho.");
+            }
+            
+            if(btn) btn.innerHTML = origText;
+        }
+        </script>
         <div style="display: flex; flex-direction: row; justify-content: center; gap: 15px; width: 100%; max-width: 50%; margin: 30px auto 30px auto; border-top: 1px dashed #ccc; padding-top: 30px;">
             <button type="button" class="btn-action" style="width: 48%; font-size: 1.2em; padding: 16px; background-color: #64748b; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;" onclick="if(typeof window._saveDraft === 'function') window._saveDraft();">💾 Salvar Rascunho</button>
             <button type="submit" class="btn-action" style="width: 48%; font-size: 1.2em; padding: 16px; background-color: #0284c7; border: none; border-radius: 8px; color: white; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease;">💾 Salvar e Enviar</button>
@@ -2758,574 +2809,82 @@
           });
         }
 
-        /*
-    CORREO APLICADA:
-    O boto "Salvar e Enviar SPU/UF" agora valida o formulrio e,
-    se estiver tudo correto, navega diretamente para foco-07.html,
-    que est na mesma pasta deste arquivo.
-  */
+        // Restaura selects com data-selected (rascunho)
+        document.querySelectorAll('#form03 select[data-selected]').forEach(function(sel) {
+          var val = sel.getAttribute('data-selected');
+          if (val) {
+            sel.value = val;
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
+        // Restaura radio-groups e seus blocos condicionais
+        [
+          { name: 'campo54', bloco: 'bloco54' },
+          { name: 'campo56_radio', bloco: 'group-campo56' },
+          { name: 'campo57_radio', bloco: 'group-campo57' },
+          { name: 'campo58_radio', bloco: 'group-campo58' },
+          { name: 'campo510_radio', bloco: 'group-campo510' }
+        ].forEach(function(cfg) {
+          var checked = document.querySelector('input[name="' + cfg.name + '"]:checked');
+          if (checked) {
+            checked.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        });
       });
 
-      // =========================================================================
-      // LÓGICA DE SALVAMENTO E MANIFESTAÇÃO (ABA 3)
-      // =========================================================================
+      // Listener obsoleto de salvamento removido para permitir submissão HTMX nativa
+      </script>
 
-      const formReq3 =
-        document.getElementById("form03") || document.querySelector("form");
-      if (formReq3) {
-        formReq3.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const btn = formReq3.querySelector('button[type="submit"]');
-          const originalText = btn ? btn.innerHTML : '';
-          if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = "⏳ Salvando...";
-          }
-          const sucesso = await executarSalvamentoAba3();
-          if (sucesso) {
-            formReq3.submit();
-          } else {
-            if (btn) {
-              btn.disabled = false;
-              btn.innerHTML = originalText;
-            }
-          }
-        });
-      }
-      let ultimoRelatorioSalvoAba3 = {};
+<script>
+// Carregar solicitação de criação de RIP
+setTimeout(async () => {
+  let solicitacao = window.INLINE_SOLICITACAO_RIP || "";
 
-      async function executarSalvamentoAba3() {
-        if (formReq3 && !formReq3.checkValidity()) {
-          formReq3.reportValidity();
-          const invalidField = formReq3.querySelector(":invalid");
-          if (invalidField) {
-            invalidField.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-            });
-          }
-          alert(
-            "Atenção: Existem campos obrigatórios não preenchidos. Por favor, revise o formulário e preencha-os antes de salvar.",
-          );
-          return false;
+  if (!solicitacao) {
+    const processId = localStorage.getItem('CURRENT_PROCESS_ID');
+    if (processId && typeof window.carregarIndicacoes === 'function') {
+      try {
+        const registro = await window.carregarIndicacoes(processId);
+        if (registro && registro.dados_json && registro.dados_json.solicitacao_criacao_rip) {
+          solicitacao = registro.dados_json.solicitacao_criacao_rip;
         }
-
-        const processId = localStorage.getItem("CURRENT_PROCESS_ID");
-        if (window.parent) {
-          try {
-            if (typeof window.parent.forceSaveDraft === "function") {
-              await window.parent.forceSaveDraft();
-            }
-
-            const formDataState = window.parent.formDataState || {};
-
-            ultimoRelatorioSalvoAba3 = {
-              // 1. Análise do Destinatário
-              cpf_cnpj_regular: document.querySelector('input[name="cpf_cnpj_regular"]:checked')?.value || "",
-              obs_cpf_cnpj_irregular: document.getElementById("obs_cpf_cnpj_irregular")?.value || "",
-              natureza_destinacao: document.getElementById("campo16")?.value || "",
-              ha_pendencias_contratuais: document.querySelector('input[name="ha_pendencias_contratuais"]:checked')?.value || "",
-              pendencias: Array.from(document.querySelectorAll('input[name="pendencias[]"]:checked')).map(el => el.value),
-              pendencias_obs: document.getElementById("obs_pendencias")?.value || "",
-
-              // 2. Capacidade Financeira
-              capacidade_fin: document.getElementById("capacidade_fin")?.value || "",
-
-              // 3. Ações judiciais ou órgãos de controle
-              nup_sei: document.getElementById("nup_sei")?.value || "",
-              tipo_processo: document.getElementById("tipo_processo")?.value || "",
-              resumo_acao: document.getElementById("resumo_acao")?.value || "",
-              descricao_acao: document.getElementById("descricao_acao")?.value || "",
-
-              // 4. Dados de Comparação de Área e Valor
-              area_total_imovel: document.getElementById("area_total_imovel")?.value || "",
-              valor_total_imovel: document.getElementById("valor_total_imovel")?.value || "",
-              area_terreno_destinada: document.getElementById("area_terreno_destinada")?.value || "",
-              area_construida_destinada: document.getElementById("area_construida_destinada")?.value || "",
-              valor_area_destinada: document.getElementById("valor_area_destinada")?.value || "",
-
-              // 5. Custos de Manutenção para a SPU
-              custos_manutencao: document.querySelector('input[name="custos_manutencao"]:checked')?.value || "",
-              custos_valor: document.getElementById("custos_valor")?.value || "",
-
-              // 6. Outros Interessados
-              outros_interessados: document.querySelector('input[name="outros_interessados"]:checked')?.value || "",
-              obs_outros_interessados: document.getElementById("obs_outros_interessados")?.value || "",
-
-              // 7. Proposta de Destinação e Impactos
-              modalidade: document.getElementById("campo51")?.value || "", // Tipo de procedimento
-              destinacao_obs: document.getElementById("campo51_obs")?.value || "",
-              tipo_uso_imobiliario: document.getElementById("campo52")?.value || "",
-              tipo_uso_especifico: document.getElementById("campo53")?.value || "",
-              previsao_modificacao: document.querySelector('input[name="campo54"]:checked')?.value || "",
-              previsao_modificacao_desc: document.getElementById("campo54_desc")?.value || "",
-              compatibilidade_urbanistica: document.getElementById("campo55")?.value || "",
-              compatibilidade_urbanistica_obs: document.getElementById("campo55_obs")?.value || "",
-              
-              vinculacao_programas_radio: document.querySelector('input[name="campo56_radio"]:checked')?.value || "",
-              vinculacao_programas: Array.from(document.querySelectorAll('input[name="campo56[]"]:checked')).map(el => el.value),
-              vinculacao_programas_obs: document.getElementById("campo56_obs")?.value || "",
-              
-              vinculacao_politicas_radio: document.querySelector('input[name="campo57_radio"]:checked')?.value || "",
-              vinculacao_politicas: Array.from(document.querySelectorAll('input[name="campo57[]"]:checked')).map(el => el.value),
-              vinculacao_politicas_obs: document.getElementById("campo57_obs")?.value || "",
-              
-              expectativa_impacto_social: document.querySelector('input[name="campo58_radio"]:checked')?.value || "",
-              impacto_social: document.getElementById("campo58")?.value || "",
-              impacto_social_obs: document.getElementById("campo58_obs")?.value || "",
-              num_beneficiarios: document.getElementById("campo59")?.value || "",
-              
-              expectativa_impacto_ambiental: document.querySelector('input[name="campo510_radio"]:checked')?.value || "",
-              impacto_ambiental: document.getElementById("campo510")?.value || "",
-              impacto_ambiental_obs: document.getElementById("campo510_obs")?.value || "",
-              
-              cessao_onerosa: document.getElementById("campo511")?.value || "", // Regime de destinação
-              cessao_obs: document.getElementById("campo511_obs")?.value || "",
-              
-              obs_geral_destinacao: document.getElementById("obs224_0")?.value || "",
-
-              // Legados/Metadados extras
-              ha_debitos: formDataState["ha_debitos"] || "",
-              debitos: formDataState["debitos[]"] || formDataState["debitos"] || [],
-              debitos_obs: formDataState["obs_debitos"] || "",
-              observacoes_aba3: document.getElementById("observacoes_aba3")?.value || "",
-            };
-            console.log("DEBUG ABA 3 - Dados a serem salvos no Relatório:", ultimoRelatorioSalvoAba3);
-
-            const urlRel = `${window.parent.SUPABASE_URL}/rest/v1/tabela_relatorios?on_conflict=process_id,aba`;
-            const payloadRel = {
-              process_id: processId,
-              aba: "aba3",
-              dados_relatorio: ultimoRelatorioSalvoAba3,
-              updated_at: new Date().toISOString(),
-            };
-
-            await fetch(urlRel, {
-              method: "POST",
-              headers: {
-                apikey: window.parent.SUPABASE_ANON_KEY,
-                Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}`,
-                "Content-Type": "application/json",
-                Prefer: "resolution=merge-duplicates",
-              },
-              body: JSON.stringify(payloadRel),
-            });
-
-            // --- VERSIONAMENTO: gravar snapshot na tabela_versoes_formulario ---
-            try {
-              const urlVersoes = `${window.parent.SUPABASE_URL}/rest/v1/tabela_versoes_formulario`;
-              // Busca a última versão desta aba para incrementar
-              const urlUltimaVersao = `${urlVersoes}?processo_id=eq.${encodeURIComponent(processId)}&aba=eq.aba3&order=versao.desc&limit=1`;
-              const resUltima = await fetch(urlUltimaVersao, {
-                headers: { apikey: window.parent.SUPABASE_ANON_KEY, Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}` }
-              });
-              const arrUltima = await resUltima.json();
-              const proximaVersao = (arrUltima.length > 0 ? arrUltima[0].versao : 0) + 1;
-
-              await fetch(urlVersoes, {
-                method: "POST",
-                headers: {
-                  apikey: window.parent.SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  processo_id: processId,
-                  aba: "aba3",
-                  versao: proximaVersao,
-                  dados_json: ultimoRelatorioSalvoAba3,
-                  criado_por: localStorage.getItem("CURRENT_USER_PROFILE") || "SISTEMA"
-                })
-              });
-              console.log(`✅ [foco-03] Versão ${proximaVersao} gravada em tabela_versoes_formulario`);
-            } catch (errVersao) {
-              console.warn("⚠️ [foco-03] Erro ao gravar versão (não bloqueia):", errVersao);
-            }
-
-            return true;
-          } catch (err) {
-            console.error("❌ [foco-03] Erro durante o salvamento:", err);
-            return false;
-          }
-        }
-        return false;
+      } catch(e) {
+        console.warn('[aba3] Erro ao carregar solicitação do Supabase:', e);
       }
+    }
+  }
 
-      const btnSalvarRelatorio3 = document.getElementById("btnSalvarRelatorio");
-
-      // ------------------------------------
-
-      const btnManifestacao3 = document.getElementById("btnManifestacao");
-      const btnEnviarPainel = document.getElementById("btnEnviarPainel");
-
-      if (btnSalvarRelatorio3) {
-        btnSalvarRelatorio3.addEventListener("click", async () => {
-          const orig = btnSalvarRelatorio3.innerHTML;
-          btnSalvarRelatorio3.innerHTML = "Salvando...";
-          const sucesso = await executarSalvamentoAba3();
-          btnSalvarRelatorio3.innerHTML = orig;
-          if (sucesso) {
-            alert("Dados da Aba 3 salvos com sucesso!");
-            if (btnManifestacao3) {
-              btnManifestacao3.style.display = "block";
-            }
-          }
-        });
-      }
-
-      if (btnManifestacao3) {
-        btnManifestacao3.addEventListener("click", async () => {
-          const orig = btnManifestacao3.innerHTML;
-          btnManifestacao3.innerHTML = "Preparando...";
-          const sucesso = await executarSalvamentoAba3();
-          btnManifestacao3.innerHTML = orig;
-
-          if (!sucesso) return;
-
-          const modalAprovacao = document.getElementById("modalAprovacaoAba3");
-          const iframeAprovacao = document.getElementById("iframeAprovacao");
-          const chkAprovar = document.getElementById("chkAprovarAba3");
-          const btnConfirmarAprov = document.getElementById(
-            "btnConfirmarAprovacao",
-          );
-          const btnCancelarAprov = document.getElementById(
-            "btnCancelarAprovacao",
-          );
-          const btnFecharAprov = document.getElementById(
-            "btnFecharModalAprovacao",
-          );
-          const loadingRelatorio = document.getElementById("loadingRelatorio");
-          const conteudoRel = document.getElementById("conteudoRelatorioAprovacao");
-
-        if (modalAprovacao) {
-          loadingRelatorio.style.display = "block";
-          conteudoRel.style.display = "none";
-          chkAprovar.checked = false;
-          btnConfirmarAprov.disabled = true;
-
-          modalAprovacao.style.display = "flex";
-
-          const onCheckChange = (ev) => {
-            btnConfirmarAprov.disabled = !ev.target.checked;
-          };
-          chkAprovar.removeEventListener("change", onCheckChange);
-          chkAprovar.addEventListener("change", onCheckChange);
-
-          const fecharModal = () => {
-            modalAprovacao.style.display = "none";
-          };
-          if (btnCancelarAprov) btnCancelarAprov.onclick = fecharModal;
-          if (btnFecharAprov) btnFecharAprov.onclick = fecharModal;
-
-          // Carrega o HTML do resumo e depois popula com os dados (Sem iframe!)
-          try {
-            const processId = localStorage.getItem("CURRENT_PROCESS_ID");
-            const SUPA_URL = window.parent?.SUPABASE_URL;
-            const SUPA_KEY = window.parent?.SUPABASE_ANON_KEY;
-
-            if (!SUPA_URL || !SUPA_KEY) {
-              throw new Error("Credenciais do Supabase não encontradas.");
-            }
-
-            // 1. Busca o HTML do resumo
-            const htmlRes = await fetch("foco-03-resumo.html?t=" + new Date().getTime());
-            if (!htmlRes.ok) throw new Error("Erro ao carregar template do resumo.");
-            const rawHtml = await htmlRes.text();
-
-            // 2. Extrai apenas o container do relatório
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(rawHtml, "text/html");
-            const reportContainer = doc.getElementById("content");
-            
-            if (!reportContainer) throw new Error("Template de relatório inválido.");
-            
-            // Insere no DOM local
-            conteudoRel.innerHTML = reportContainer.innerHTML;
-
-            // 3. Busca os dados do Supabase
-            const url = `${SUPA_URL}/rest/v1/tabela_relatorios?select=*&process_id=eq.${encodeURIComponent(processId)}&aba=eq.aba3&limit=1`;
-            const dataRes = await fetch(url, {
-              headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
-            });
-
-            if (!dataRes.ok) throw new Error("Erro ao buscar dados do relatório.");
-            const data = await dataRes.json();
-
-            if (data && data.length > 0) {
-              ultimoRelatorioSalvoAba3 = data[0].dados_relatorio;
-              const rel = ultimoRelatorioSalvoAba3;
-
-              // Popula os elementos do resumo inserido
-              conteudoRel.querySelector("#val_cpf_cnpj_regular").textContent = rel.cpf_cnpj_regular || '-';
-              conteudoRel.querySelector("#val_obs_cpf_cnpj_irregular").textContent = rel.obs_cpf_cnpj_irregular || '-';
-              conteudoRel.querySelector("#val_natureza").textContent = rel.natureza_destinacao || '-';
-              conteudoRel.querySelector("#val_pendencias").textContent = (rel.ha_pendencias_contratuais === 'Sim' && rel.pendencias && rel.pendencias.length > 0) ? (Array.isArray(rel.pendencias) ? rel.pendencias.join(', ') : rel.pendencias) : rel.ha_pendencias_contratuais || '-';
-              conteudoRel.querySelector("#val_pendencias_obs").textContent = rel.pendencias_obs || '-';
-
-              conteudoRel.querySelector("#val_capacidade_fin").textContent = rel.capacidade_fin ? (rel.capacidade_fin === 'demonstrada' ? 'Demonstrada formalmente' : rel.capacidade_fin === 'não demonstrada' ? 'Não demonstrada' : 'Não se aplica') : '-';
-
-              conteudoRel.querySelector("#val_nup_sei").textContent = rel.nup_sei || '-';
-              conteudoRel.querySelector("#val_tipo_processo").textContent = rel.tipo_processo || '-';
-              conteudoRel.querySelector("#val_resumo_acao").textContent = rel.resumo_acao || '-';
-              conteudoRel.querySelector("#val_descricao_acao").textContent = rel.descricao_acao || '-';
-
-              conteudoRel.querySelector("#val_area_total_imovel").textContent = rel.area_total_imovel || '-';
-              conteudoRel.querySelector("#val_valor_total_imovel").textContent = rel.valor_total_imovel || '-';
-              conteudoRel.querySelector("#val_area_terreno_destinada").textContent = rel.area_terreno_destinada || '-';
-              conteudoRel.querySelector("#val_area_construida_destinada").textContent = rel.area_construida_destinada || '-';
-              conteudoRel.querySelector("#val_valor_area_destinada").textContent = rel.valor_area_destinada || '-';
-
-              conteudoRel.querySelector("#val_custos_manutencao").textContent = rel.custos_manutencao || '-';
-              conteudoRel.querySelector("#val_custos_valor").textContent = rel.custos_valor || '-';
-              conteudoRel.querySelector("#val_outros_interessados").textContent = rel.outros_interessados || '-';
-              conteudoRel.querySelector("#val_obs_outros_interessados").textContent = rel.obs_outros_interessados || '-';
-
-              conteudoRel.querySelector("#val_modalidade").textContent = rel.modalidade || '-';
-              conteudoRel.querySelector("#val_destinacao_obs").textContent = rel.destinacao_obs || '-';
-
-              const mapaUsoImobiliario = {
-                  "0101": "01.01 Uso administrativo e representativo",
-                  "0102": "01.02 Uso para agropecuária, aquicultura, produção florestal e pesca",
-                  "0103": "01.03 Uso ambiental e dos recursos naturais",
-                  "0104": "01.04 Uso cultural, esportivo e de lazer",
-                  "0105": "01.05 Uso em eventos de curta duração",
-                  "0106": "01.06 Uso habitacional",
-                  "0107": "01.07 Uso industrial, comercial ou de prestação de serviços",
-                  "0108": "01.08 Uso em infraestrutura de serviços públicos",
-                  "0109": "01.09 Uso em infraestrutura de transportes",
-                  "0110": "01.10 Uso multifinalitário em projeto de requalificação urbana",
-                  "0111": "01.11 Uso por povos originários e comunidades tradicionais",
-                  "0112": "01.12 Uso em serviço de ensino, pesquisa e extensão",
-                  "0113": "01.13 Uso em serviço socioassistêncial e de cidadania",
-                  "0114": "01.14 Uso em serviços de saúde",
-                  "0115": "01.15 Uso residential para servidor",
-                  "0116": "01.16 Uso para segurança pública e defesa nacional",
-                  "0117": "01.17 Uso religioso",
-                  "0118": "01.18 Sem informação",
-                  "0119": "01.19 Sem uso definido/vinculação"
-              };
-              conteudoRel.querySelector("#val_tipo_uso_imobiliario").textContent = mapaUsoImobiliario[rel.tipo_uso_imobiliario] || rel.tipo_uso_imobiliario || '-';
-              conteudoRel.querySelector("#val_tipo_uso_especifico").textContent = rel.tipo_uso_especifico || '-';
-
-              conteudoRel.querySelector("#val_cessao").textContent = rel.cessao_onerosa || '-';
-              conteudoRel.querySelector("#val_cessao_obs").textContent = rel.cessao_obs || '-';
-
-              conteudoRel.querySelector("#val_previsao_modificacao").textContent = rel.previsao_modificacao || '-';
-              conteudoRel.querySelector("#val_previsao_modificacao_desc").textContent = rel.previsao_modificacao_desc || '-';
-              conteudoRel.querySelector("#val_compatibilidade_urbanistica").textContent = rel.compatibilidade_urbanistica || '-';
-              conteudoRel.querySelector("#val_compatibilidade_urbanistica_obs").textContent = rel.compatibilidade_urbanistica_obs || '-';
-
-              conteudoRel.querySelector("#val_vinculacao_programas_radio").textContent = rel.vinculacao_programas_radio || '-';
-              conteudoRel.querySelector("#val_vinculacao_programas").textContent = (Array.isArray(rel.vinculacao_programas) ? rel.vinculacao_programas.join(', ') : rel.vinculacao_programas) || '-';
-              conteudoRel.querySelector("#val_vinculacao_programas_obs").textContent = rel.vinculacao_programas_obs || '-';
-
-              conteudoRel.querySelector("#val_vinculacao_politicas_radio").textContent = rel.vinculacao_politicas_radio || '-';
-              conteudoRel.querySelector("#val_vinculacao_politicas").textContent = (Array.isArray(rel.vinculacao_politicas) ? rel.vinculacao_politicas.join(', ') : rel.vinculacao_politicas) || '-';
-              conteudoRel.querySelector("#val_vinculacao_politicas_obs").textContent = rel.vinculacao_politicas_obs || '-';
-
-              conteudoRel.querySelector("#val_expectativa_impacto_social").textContent = rel.expectativa_impacto_social || '-';
-              conteudoRel.querySelector("#val_impacto_social").textContent = rel.impacto_social || '-';
-              conteudoRel.querySelector("#val_num_beneficiarios").textContent = rel.num_beneficiarios || '-';
-              conteudoRel.querySelector("#val_impacto_social_obs").textContent = rel.impacto_social_obs || '-';
-
-              conteudoRel.querySelector("#val_expectativa_impacto_ambiental").textContent = rel.expectativa_impacto_ambiental || '-';
-              conteudoRel.querySelector("#val_impacto_ambiental").textContent = rel.impacto_ambiental || '-';
-              conteudoRel.querySelector("#val_impacto_ambiental_obs").textContent = rel.impacto_ambiental_obs || '-';
-
-              conteudoRel.querySelector("#val_obs_geral_destinacao").textContent = rel.obs_geral_destinacao || '-';
-
-              const mapaDespacho = {
-                  "aprovar": "✅ Aprovar e Concluir Processo",
-                  "devolver_aba2": "⚠️ Devolver para Caracterização (Aba 2)",
-                  "devolver_aba1": "🛑 Indicação do Imóvel"
-              };
-              conteudoRel.querySelector("#val_despacho_final").textContent = mapaDespacho[rel.despacho_final] || rel.despacho_final || '-';
-              conteudoRel.querySelector("#val_motivo_devolucao").textContent = rel.motivo_devolucao || '-';
-
-              const dateObj = new Date(data[0].updated_at);
-              conteudoRel.querySelector("#val_data_relatorio").textContent = dateObj.toLocaleString("pt-BR");
-              conteudoRel.querySelector("#val_base_id").textContent = processId;
-
-              // Renderiza selo de aprovação
-              if (rel.aprovacao && rel.aprovacao.status) {
-                  const aprovDate = new Date(rel.aprovacao.data).toLocaleString("pt-BR");
-                  const perfilAss = rel.aprovacao.perfil || "Perfil Atual";
-                  const obsAss = rel.aprovacao.observacoes ? rel.aprovacao.observacoes : "Sem observações adicionais.";
-                  
-                  const metaDiv = conteudoRel.querySelector('div[style*="border-left: 6px solid #1a7a4a"]');
-                  if (metaDiv) {
-                      metaDiv.innerHTML += `
-                          <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed #ccc; color: #333;">
-                              <h4 style="margin:0 0 10px 0; color: #1e3a5f;">Conclusão e Manifestação</h4>
-                              <div style="background: #e8f5e9; padding: 15px; border-radius: 4px; border-left: 4px solid #166534; margin-bottom: 15px;">
-                                  <p style="margin: 0 0 10px 0; font-size: 13px; color: #166534;">
-                                      <strong>Declaração:</strong> Declaro que as informações consignadas neste formulário foram inseridas com base nos dados disponíveis nos sistemas oficiais, nos documentos constantes do processo e nas verificações realizadas no âmbito desta unidade, estando compatíveis com os elementos analisados.
-                                  </p>
-                                  <div style="font-size: 14px; color: #166534;">
-                                      <strong>✅ Aprovado e Assinado Digitalmente</strong>
-                                      <br>Data: ${aprovDate}
-                                      <br>Perfil Responsável: <strong>${perfilAss}</strong>
-                                  </div>
-                              </div>
-                              <div style="background: #f8fafc; padding: 15px; border-radius: 4px; border: 1px solid #cbd5e1;">
-                                  <h5 style="margin:0 0 8px 0; color: #334155; font-size: 14px;">Observações da Manifestação:</h5>
-                                  <p style="margin: 0; font-size: 13px; color: #475569; white-space: pre-wrap;">${obsAss}</p>
-                              </div>
-                          </div>
-                      `;
-                  }
-              }
-
-              loadingRelatorio.style.display = "none";
-              conteudoRel.style.display = "block";
-            } else {
-              loadingRelatorio.innerText = "Nenhum relatório salvo encontrado para a Aba 3. Salve a Aba 3 para gerar.";
-            }
-          } catch (err) {
-            console.error(err);
-            loadingRelatorio.innerText = "Erro ao carregar o relatório: " + err.message;
-          }
-
-          btnConfirmarAprov.onclick = async () => {
-            const origBtn = btnConfirmarAprov.innerHTML;
-            btnConfirmarAprov.innerHTML = "Salvando...";
-
-            try {
-              const processId = localStorage.getItem("CURRENT_PROCESS_ID");
-              const urlRelPatch = `${window.parent.SUPABASE_URL}/rest/v1/tabela_relatorios?process_id=eq.${encodeURIComponent(processId)}&aba=eq.aba3`;
-
-              const observacoes = document.getElementById("txtObservacoesAba3")
-                ? document.getElementById("txtObservacoesAba3").value
-                : "";
-              const perfilLogado =
-                localStorage.getItem("CURRENT_USER_PROFILE") ||
-                "Equipe SPU/UF (Destinação)";
-
-              ultimoRelatorioSalvoAba3.aprovacao = {
-                status: true,
-                data: new Date().toISOString(),
-                perfil: perfilLogado,
-                observacoes: observacoes,
-              };
-
-              await fetch(urlRelPatch, {
-                method: "PATCH",
-                headers: {
-                  apikey: window.parent.SUPABASE_ANON_KEY,
-                  Authorization: `Bearer ${window.parent.SUPABASE_ANON_KEY}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  dados_relatorio: ultimoRelatorioSalvoAba3,
-                  updated_at: new Date().toISOString(),
-                }),
-              });
-            } catch (e) {
-              console.warn("⚠️ [foco-03] Erro ao salvar aprovação no relatório (não crítico):", e);
-            }
-
-            // Sempre mostra o botão e fecha o modal, independente de erros no relatório
-            if (btnEnviarPainel) {
-              btnEnviarPainel.style.display = "block";
-            }
-            fecharModal();
-            btnConfirmarAprov.innerHTML = origBtn;
-          };
-        }
-        });
-      }
-
-      if (btnEnviarPainel) {
-        btnEnviarPainel.addEventListener("click", async () => {
-          btnEnviarPainel.disabled = true;
-          btnEnviarPainel.innerHTML = "⏳ Enviando...";
-
-          const processId = localStorage.getItem("CURRENT_PROCESS_ID");
-
-          // --- Salva o status diretamente via fetch (não depende de window.parent) ---
-          const SUPA_URL = window.parent?.SUPABASE_URL || window.SUPABASE_URL;
-          const SUPA_KEY = window.parent?.SUPABASE_ANON_KEY || window.SUPABASE_ANON_KEY;
-
-          if (processId && SUPA_URL && SUPA_KEY) {
-            try {
-              let novoCheckpoint = 'Validação análise de viabilidade - Chefia';
-              let novoStatus = 'Validação análise de viabilidade - Chefia';
-              let novaInstancia = 'Chefia';
-              let novoPerfil = 'Chefia';
-
-              // Verifica se já existe linha para esse processo
-              const resGet = await fetch(
-                `${SUPA_URL}/rest/v1/tabela_status_fluxo?select=id&numero_requerimento=eq.${encodeURIComponent(processId)}&order=id.desc&limit=1`,
-                { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-              );
-              const existData = await resGet.json();
-              const dadosJson = { 
-                  checkpoint: novoCheckpoint, 
-                  status_geral: novoStatus,
-                  tag_fluxo: "Em andamento",
-                  status: novoStatus,
-                  instancia: novaInstancia,
-                  perfil: novoPerfil
-              };
-
-              if (existData.length > 0) {
-                await fetch(
-                  `${SUPA_URL}/rest/v1/tabela_status_fluxo?numero_requerimento=eq.${encodeURIComponent(processId)}`,
-                  {
-                    method: 'PATCH',
-                    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ dados_json: dadosJson })
-                  }
-                );
-              } else {
-                await fetch(
-                  `${SUPA_URL}/rest/v1/tabela_status_fluxo`,
-                  {
-                    method: 'POST',
-                    headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ numero_requerimento: processId, dados_json: dadosJson })
-                  }
-                );
-              }
-              console.log("✅ [foco-03] Checkpoint salvo:", novoCheckpoint, "para", processId);
-            } catch(e) {
-              console.error("❌ [foco-03] Erro ao salvar checkpoint:", e);
-            }
-          } else {
-            console.warn("⚠️ [foco-03] Sem processId ou credenciais para salvar checkpoint");
-          }
-
-          if (window.parent?.formDataState) {
-            delete window.parent.formDataState.status_devolucao;
-            delete window.parent.formDataState.motivo_devolucao;
-            delete window.parent.formDataState.resposta_devolucao;
-          }
-          if (typeof window.parent?.forceSaveDraft === "function") {
-            await window.parent.forceSaveDraft();
-          }
-
-          // Salvar Snapshot Histórico no Supabase antes de trocar de aba
-          if (window.parent && typeof window.parent.salvarSnapshotHistorico === 'function') {
-              await window.parent.salvarSnapshotHistorico('Aba 3 (Destinação)');
-          }
-
-          const rootWindow = window.parent?.parent || window.parent || window;
-          const btnTabNext = rootWindow.document?.querySelector('button[data-url="aba7.html"]');
-          if (btnTabNext) {
-            await new Promise(resolve => setTimeout(resolve, 600));
-            btnTabNext.click();
-            setTimeout(() => {
-              const iframeAba7 = rootWindow.document?.getElementById('frame');
-              if (iframeAba7 && iframeAba7.contentWindow) {
-                iframeAba7.contentWindow.postMessage({ type: 'RELOAD_DELIBERACOES' }, '*');
-              }
-            }, 800);
-          } else {
-            alert("Manifestação concluída! Verifique o painel principal.");
-          }
-        });
-      }
-    </script>
+  if (solicitacao) {
+    const container = document.getElementById('container-solicitacao-criacao-rip');
+    if (!container) return;
+    const anexos = window.INLINE_SOLICITACAO_ANEXOS || [];
+    let anexosHtml = '';
+    if (anexos.length > 0) {
+      anexosHtml = anexos.map(a =>
+        `<div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:#fff;border-radius:4px;border:1px solid #f3f4f6;margin-top:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          <a href="${a.base64}" target="_blank" download="${a.nome}" style="color:#1e3a5f;text-decoration:underline;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.nome}">${a.nome}</a>
+        </div>`
+      ).join('');
+    }
+    container.style.display = "block";
+    container.innerHTML = `
+      <div class="card mb-4" style="border: 1px solid #fbcfe8; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); background-color: #fdf2f8;">
+        <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; border-bottom: 1px solid #fbcfe8; background-color: #fce7f3; color: #9d174d;">
+          <h4 style="margin: 0; font-weight: bold; font-size: 1.1em;">🔔 Solicitação de Criação de RIP</h4>
+        </div>
+        <div style="padding: 16px;">
+          <div style="text-align: left; margin: 0;">
+            <label style="display:block; margin-bottom: 5px; font-weight: 600; color: #9d174d;">Justificativa enviada ao setor de cadastro:</label>
+            <textarea readonly style="width: 100%; border: 1px solid #fbcfe8; padding: 8px; border-radius: 4px; background-color: #fff; color: #334155; resize: vertical; font-family: inherit; font-size: 14px;" rows="4">${solicitacao}</textarea>
+          </div>
+          ${anexosHtml ? `<div style="margin-top:12px;"><label style="display:block;margin-bottom:5px;font-weight:600;color:#9d174d;font-size:13px;">Anexos:</label>${anexosHtml}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+}, 1000);
+</script>
   </body>
 </html>
 

@@ -8,7 +8,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SPUnet - Módulo de Gestão</title>
+    <title>Plataforma Integrada - Módulo de Instrução Processual</title>
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}?v=20260722_1620">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -65,7 +65,7 @@
                 <span style="font-size: 20px; font-weight: 800; color: #1e3a5f; letter-spacing: -1px;">SPU<span style="color: #2e7d32;">net</span></span>
                 <div style="width: 1.5px; height: 24px; background-color: #cbd5e1;"></div>
                 <div class="navbar-title">
-                    <h1>Módulo de Gestão</h1>
+                    <h1>Módulo de Instrução Processual</h1>
                     <span>Secretaria do Patrimônio da União</span>
                 </div>
             </div>
@@ -156,7 +156,7 @@
             @endphp
             <div class="filters-header" onclick="toggleFilters()">
                 <h2>
-                    <span>▼</span> Filtros
+                    <span>▶</span> Filtros
                 </h2>
                 <div class="filter-view-selector" onclick="event.stopPropagation()">
                     <button type="button" class="filter-view-btn {{ $currentView === 'padrao' ? 'active' : '' }}" onclick="switchView('padrao')">Padrão</button>
@@ -179,8 +179,13 @@
                     <a href="{{ route('processos.index', ['view' => $currentView]) }}" class="filter-badge-clear">Limpar todos</a>
                 </div>
                 @endif
+                
+                <div style="margin-left: auto; display: flex; gap: 8px;" onclick="event.stopPropagation()">
+                    <a href="{{ route('processos.index', ['view' => $currentView]) }}" style="height: 34px; display: flex; align-items: center; justify-content: center; padding: 0 16px; background-color: #ef4444; color: white; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 0.95em; transition: background-color 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Limpar</a>
+                    <button type="submit" form="filterForm" style="height: 34px; padding: 0 16px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.95em; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">Aplicar</button>
+                </div>
             </div>
-            <form method="GET" action="{{ route('processos.index') }}" class="filters-body" id="filtersBody">
+            <form id="filterForm" class="filters-body" method="GET" action="{{ route('processos.index') }}">
                 <input type="hidden" name="view" value="{{ $currentView }}">
 
                 <!-- VIEW PADRÃO -->
@@ -241,7 +246,7 @@
                     <div class="dropdown-check" id="ddStatus">
                         <button type="button" class="dropdown-check-btn" onclick="toggleDropdown('ddStatus')">
                             <span class="dropdown-check-label">Todos</span>
-                            <span class="dropdown-check-arrow">▼</span>
+                            <span class="dropdown-check-arrow">▶</span>
                         </button>
                         <div class="dropdown-check-panel" style="max-height: 200px; overflow-y: auto;">
                             @foreach($statuses as $st)
@@ -258,7 +263,7 @@
                     <div class="dropdown-check" id="ddTipo">
                         <button type="button" class="dropdown-check-btn" onclick="toggleDropdown('ddTipo')">
                             <span class="dropdown-check-label">Todos</span>
-                            <span class="dropdown-check-arrow">▼</span>
+                            <span class="dropdown-check-arrow">▶</span>
                         </button>
                         <div class="dropdown-check-panel" style="max-height: 200px; overflow-y: auto;">
                             @foreach([
@@ -286,14 +291,10 @@
                     <input type="text" name="interessado" id="filterInteressado" value="{{ request('interessado') }}" placeholder="Nome do requerente" style="border: 1px solid #cbd5e1; border-radius: 4px;">
                 </div>
                 
-                <!-- 6º SLOT: RIP + BOTÕES -->
-                <div class="filter-group" style="display: flex; flex-direction: row; gap: 10px; align-items: flex-end;">
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                        <label for="filterRip">RIP</label>
-                        <input type="text" name="rip" id="filterRip" value="{{ request('rip') }}" placeholder="Nº do RIP" style="border: 1px solid #cbd5e1; border-radius: 4px;">
-                    </div>
-                    <button type="submit" style="height: 38px; padding: 0 20px; background-color: #2e7d32; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Aplicar</button>
-                    <a href="{{ route('processos.index', ['view' => $currentView]) }}" style="height: 38px; display: flex; align-items: center; justify-content: center; padding: 0 20px; background-color: #ef4444; color: white; border-radius: 4px; text-decoration: none; font-weight: bold; transition: background-color 0.2s;">Limpar</a>
+                <!-- 6º SLOT: RIP -->
+                <div class="filter-group" style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="filterRip">RIP</label>
+                    <input type="text" name="rip" id="filterRip" value="{{ request('rip') }}" placeholder="Nº do RIP" style="border: 1px solid #cbd5e1; border-radius: 4px;">
                 </div>
             </form>
         </section>
@@ -361,8 +362,8 @@
                                 @else
                                     <span style="display: inline-block; width: 32px; text-align: center; color: #cbd5e1;" title="Ação indisponível neste status">─</span>
                                 @endif
-                                <a href="{{ route('processos.historico', $proc->id) }}" class="btn-action" title="Visualizar Processo / Histórico" style="display: flex; align-items: center; padding: 4px; border: none; outline: none; text-decoration: none;">
-                                    <img src="{{ asset('images/icon-eye.svg') }}" width="24" height="24" alt="Visualizar">
+                                <a href="{{ route('processos.historico.escolha', $proc->id) }}" class="btn-action" title="Visualizar Histórico" style="display: flex; align-items: center; padding: 4px; border: none; outline: none; text-decoration: none;">
+                                    <img src="{{ asset('images/icon-eye.svg') }}" width="24" height="24" alt="Histórico">
                                 </a>
                             </div>
                         </td>
@@ -397,7 +398,7 @@
 
     <script>
         function toggleFilters() {
-            const body = document.getElementById('filtersBody');
+            const body = document.getElementById('filterForm');
             body.style.display = body.style.display === 'none' ? 'grid' : 'none';
         }
 

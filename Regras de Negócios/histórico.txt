@@ -1,0 +1,8 @@
+aparentemente, está tudo ok.
+
+Você poderia fazer uma checagem no histórico de movimentações (aquelu cujo acesso de dá pelo ícone do olho no painel de requerimentos) para ver se está registrando:
+- as mudanças de status;
+- as eventuais devoluções do processo;
+- o registro de "ciente" na devolução do processo;
+- o registro do retorno da devolução (declaração do que foi feito em relação à devolução);
+- as manifestações (validação / deliberação) a partir do perfil de chefia e acima na hierarquia.

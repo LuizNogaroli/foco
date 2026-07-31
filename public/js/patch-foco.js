@@ -67,7 +67,7 @@ const replacement = `// 3. ÚLTIMO RECURSO: Tenta recuperar varrendo as chaves d
                         content.style.display = 'none';
                     }
                     if (icon) {
-                        icon.textContent = '▼';
+                        icon.textContent = '▶';
                         icon.classList.remove('open');
                     }
                 }

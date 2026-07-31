@@ -1,6 +1,8 @@
 <script>
-    window.INLINE_RIPS = @json($processo->foco && $processo->foco->rips ? $processo->foco->rips->pluck('numero_rip')->toArray() : []);
-    window.INLINE_CADASTROS = @json($processo->foco && $processo->foco->cadastrosMinimos ? $processo->foco->cadastrosMinimos->toArray() : []);
+    window.INLINE_RIPS = @json($dados['rips'] ?? ($processo->foco && $processo->foco->rips ? $processo->foco->rips->pluck('numero_rip')->toArray() : []));
+    window.INLINE_CADASTROS = @json($dados['cadastros_minimos'] ?? ($processo->foco && $processo->foco->cadastrosMinimos ? $processo->foco->cadastrosMinimos->toArray() : []));
+    window.INLINE_SOLICITACAO_RIP = @json($dados['solicitacao_criacao_rip'] ?? ($processo->foco?->aba1?->solicitacao_criacao_rip ?? ''));
+    window.INLINE_SOLICITACAO_ANEXOS = @json($dados['solicitacao_anexos'] ?? []);
 </script>
 <style>
     /* ═══ Paleta institucional Aba 1 ═══ */
@@ -20,8 +22,8 @@
     .accordion-header:hover { filter: brightness(0.96); }
     .accordion-body { display: block; padding: 22px; border-top: none; }
     .accordion-body.collapsed { display: none; }
-    .accordion-icon { font-size: 0.85rem; transition: transform 0.3s; color: #fff !important; }
-    .active .accordion-icon { transform: rotate(180deg); }
+    .accordion-icon { font-size: 0.9rem; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1); color: #fff !important; will-change: transform; transform: translateZ(0); display: inline-block; }
+    .active .accordion-icon { transform: rotate(90deg); }
     .accordion-header .accordion-title { display: inline-flex; align-items: center; gap: 10px; }
     .accordion-header .accordion-title svg { flex: 0 0 auto; }
 
@@ -67,8 +69,19 @@
     <fieldset>
     <form method="POST" action="{{ route('processos.tramitar', $processo->id) }}" id="form01">
         @csrf
-        <input type="hidden" name="next_aba" value="index">
         <input type="hidden" name="aba_atual" value="1">
+        <input type="hidden" name="next_aba" value="index">
+
+        @if ($errors->any())
+            <div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+                <h4 style="color: #b91c1c; margin-top: 0; margin-bottom: 10px;">⚠️ Atenção: Não foi possível salvar devido aos seguintes erros:</h4>
+                <ul style="color: #991b1b; margin-bottom: 0; padding-left: 20px;">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         
         <div class="accordion-container" style="margin-bottom: 25px;">
             <!-- Dados do Requerimento -->
@@ -78,7 +91,7 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                         <span>Dados do Requerimento</span>
                     </span>
-                    <span class="accordion-icon">▼</span>
+                    <span class="accordion-icon">▶</span>
                 </div>
                 <div class="accordion-body collapsed" style="padding: 15px;">
                     <div class="form-group inline">
@@ -131,21 +144,21 @@
                     </div>
                     <div class="form-group inline">
                         <label>Prioridade Legal:</label>
-                        <input type="text" id="prioridade_legal" name="prioridade_legal" value="{{ $requerimento->prioridade_legal ?? 'Não se aplica' }}" readonly style="color: #ea580c; font-weight: bold; background: transparent; border: none;">
+                        <input type="text" id="prioridade_legal" name="prioridade_legal" value="{{ $requerimento->prioridade_legal ?? 'Não' }}" readonly style="{{ empty($requerimento->prioridade_legal) ? 'color: #ea580c; font-weight: bold;' : '' }} background: transparent; border: none;">
                     </div>
 
                     <!-- 1.11 Documentos anexados ao requerimento -->
-                    <section class="documentos-linkados-section" aria-labelledby="titulo-documentos-linkados" style="margin-top: 25px;">
-                        <details class="documentos-expansivel" open>
-                            <summary class="documentos-expansivel-header" style="cursor: pointer; padding: 14px 18px; background: #1e3a5f; border: 1px solid #17375a; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="titulo-documentos-linkados" style="font-weight: 600; color: #ffffff; display: inline-flex; align-items: center; gap: 10px;">
+                    <section class="documentos-linkados-section accordion-container" aria-labelledby="titulo-documentos-linkados" style="margin-top: 25px; margin-bottom: 0;">
+                        <div class="accordion-item" style="border: none;">
+                            <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                                <span class="accordion-title" id="titulo-documentos-linkados" style="font-weight: 600; color: #ffffff;">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                     Documentos anexados ao requerimento
                                 </span>
-                                <span class="documentos-linkados-badge" style="background: #dbeafe; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; color: #12395b; border: 1px solid #93c5fd;">Documentos Digitais</span>
-                            </summary>
+                                <span class="accordion-icon">▶</span>
+                            </div>
 
-                            <div class="documentos-linkados-card" style="border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 6px 6px; padding: 15px; background: #ffffff;">
+                            <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
                                 <table class="documentos-linkados-table documentos-table-simplificada" style="width: 100%; border-collapse: collapse;">
                                     <thead>
                                         <tr style="border-bottom: 2px solid #e2e8f0; text-align: left; font-size: 12px; color: #64748b;">
@@ -171,7 +184,7 @@
                                     </tbody>
                                 </table>
                             </div>
-                        </details>
+                        </div>
                     </section>
                 </div>
             </div>
@@ -185,9 +198,9 @@
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: middle;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                         <span>Indicação do Imóvel</span>
                     </span>
-                    <span class="accordion-icon">▲</span>
+                    <span class="accordion-icon">▶</span>
                 </div>
-                <div class="accordion-body" style="padding: 15px; display: block;">
+                <div class="accordion-body collapsed" style="padding: 15px; display: none;">
                     <!-- Botão Adicionar Imóvel/Área -->
                     <div style="display: flex; justify-content: center; margin: 15px 0;" class="editavel">
                         <button type="button" id="btnAdicionarImovelArea" class="btn-action btn-inst btn-inst-primary">
@@ -234,12 +247,27 @@
             </div>
         </div>
 
-            <!-- Bloco Resposta à Devolutiva -->
-            <div id="blocoRespostaDevolutivaAba1" class="editavel" style="display: none; background-color: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 20px; margin-top: 30px; margin-bottom: 10px;">
-                <h4 style="color: #d97706; margin-top: 0; border-bottom: 1px solid #fcd34d; padding-bottom: 8px;">Resposta à Devolutiva</h4>
-                <label for="resposta_devolucao" style="font-weight: bold; color: #92400e;">Descreva o que foi corrigido ou complementado nesta etapa (Obrigatório):</label>
-                <textarea id="resposta_devolucao" name="resposta_devolucao" style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #fcd34d; border-radius: 4px; margin-top: 10px; font-family: inherit; font-size: 14px;"></textarea>
-            </div>
+            <!-- Bloco Retornar Processo -->
+            @if($processo->tramitacao === 'Devolvido')
+                @if(isset($respostaDevolucao))
+                <div id="blocoRespostaDevolutivaAba1" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-top: 30px; margin-bottom: 10px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">✅ Retornar Processo</h4>
+                    <p style="margin-bottom: 10px; font-size: 0.9em; color: #166534;">
+                        Justificativa preenchida por <strong>{{ $respostaDevolucao['usuario'] }}</strong> em {{ $respostaDevolucao['data'] }}
+                    </p>
+                    <div style="width: 100%; min-height: 80px; padding: 15px; border: 1px solid #86efac; border-radius: 4px; background-color: #f8fafc; font-family: inherit; font-size: 14px; color: #334155; white-space: pre-wrap;">{{ $respostaDevolucao['texto'] }}</div>
+                </div>
+                @else
+                <div id="blocoRespostaDevolutivaAba1" class="editavel" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-top: 30px; margin-bottom: 10px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">Retornar Processo</h4>
+                    <label for="resposta_devolucao" style="font-weight: bold; color: #166534;">Descreva o que foi corrigido ou complementado nesta etapa (Obrigatório para enviar):</label>
+                    <textarea id="resposta_devolucao" name="resposta_devolucao" required style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #86efac; border-radius: 4px; margin-top: 10px; font-family: inherit; font-size: 14px;">{{ $dados['resposta_devolucao'] ?? '' }}</textarea>
+                </div>
+                @endif
+            @endif
+
+        <!-- Hidden input para solicitação de criação de RIP (enviado via "Salvar e Enviar") -->
+        <input type="hidden" name="solicitacao_criacao_rip" id="hiddenSolicitacaoCriacaoRip" value="{{ $dados['solicitacao_criacao_rip'] ?? ($processo->foco?->aba1?->solicitacao_criacao_rip ?? '') }}">
 
         <div style="margin-top: 40px; border-top: 1px solid var(--aba1-border); padding-top: 24px;">
             <div style="display: flex; flex-direction: row; justify-content: center; gap: 15px; width: 100%; margin-bottom: 30px;">
@@ -336,10 +364,11 @@
                     <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Observações:</label>
                     <textarea id="modalObservacoes" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; resize: vertical; min-height: 80px; margin-bottom: 0;" placeholder="Escreva observações aqui..."></textarea>
                     
-                    <button type="button" class="btn-inst btn-inst-outline" style="margin-top: 10px; padding: 8px 12px; font-size: 0.82rem;">
+                    <button type="button" id="btnAddLinkDoc" class="btn-inst btn-inst-outline" style="margin-top: 10px; padding: 8px 12px; font-size: 0.82rem;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Adicionar link/documento
                     </button>
+                    <div id="linksDocsContainer"></div>
                 </div>
             </div>
 
@@ -349,6 +378,29 @@
             </div>
         </div>
     </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnAddLinkDoc = document.getElementById('btnAddLinkDoc');
+        const linksDocsContainer = document.getElementById('linksDocsContainer');
+        
+        if (btnAddLinkDoc && linksDocsContainer) {
+            btnAddLinkDoc.addEventListener('click', function() {
+                const docRow = document.createElement('div');
+                docRow.style.cssText = 'display: flex; gap: 10px; margin-top: 10px; align-items: center;';
+                docRow.innerHTML = `
+                    <input type="file" style="display:none;" onchange="this.nextElementSibling.value = this.files[0].name">
+                    <input type="text" placeholder="Cole o link ou clique para selecionar arquivo" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; cursor: pointer;" onclick="if(!this.value) this.previousElementSibling.click()">
+                    <button type="button" class="btn-inst btn-inst-outline" style="padding: 8px; color: #dc2626; border-color: #dc2626;" onclick="this.parentElement.remove()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                `;
+                linksDocsContainer.appendChild(docRow);
+            });
+        }
+    });
+</script>
     <!-- Modal Solicitar Criação de RIP -->
     <div id="modalSolicitarCriacaoRip" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center;">
         <div style="background:white; padding:30px; border-radius:12px; max-width:500px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.3); text-align:left; position:relative; border-top: 8px solid #1e3a5f;">
@@ -359,6 +411,15 @@
             <div style="margin-bottom: 20px;">
                 <label for="inputSolicitacaoCriacao" style="font-weight: bold; display: block; margin-bottom: 8px; color:#1e3a5f;">Justificativa / Descrição da Solicitação:</label>
                 <textarea id="inputSolicitacaoCriacao" rows="5" placeholder="Descreva aqui os detalhes do imóvel, localização e motivo da solicitação de abertura de RIP..." style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; resize:vertical; outline:none; font-family:inherit;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px; color:#1e3a5f;">Anexos:</label>
+                <button type="button" id="btnAddAnexoSolicitacao" class="btn-inst btn-inst-outline" style="padding: 8px 12px; font-size: 0.82rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 4px;"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    Adicionar arquivo
+                </button>
+                <div id="anexosSolicitacaoContainer" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
             
             <div style="display:flex; justify-content:flex-end; gap:12px;">
@@ -405,3 +466,86 @@
             </div>
         </div>
     </div>
+
+<script>
+window._saveDraft = async function() {
+    console.log("Exibindo _saveDraft embutida na Aba 1");
+    const form = document.getElementById("form01");
+    if (!form) {
+        alert("Erro: Formulário da Aba 1 não foi localizado.");
+        return false;
+    }
+
+    // Extrai o ID do processo da action (/processos/{id}/tramitar)
+    const actionUrl = form.getAttribute("action") || "";
+    const match = actionUrl.match(/\/processos\/(\d+)/);
+    const processId = match ? match[1] : null;
+
+    if (!processId) {
+        alert("Erro: Não foi possível identificar o ID do processo.");
+        return false;
+    }
+
+    const formData = new FormData(form);
+    const dataObj = {};
+    for (let [key, value] of formData.entries()) {
+        if (key === '_token' || key === 'aba_atual' || key === 'next_aba') continue;
+        
+        // Remove o sufixo [] para bater com a estrutura esperada no backend/Blade
+        const cleanKey = key.endsWith('[]') ? key.slice(0, -2) : key;
+        
+        if (dataObj[cleanKey] !== undefined) {
+            if (!Array.isArray(dataObj[cleanKey])) dataObj[cleanKey] = [dataObj[cleanKey]];
+            dataObj[cleanKey].push(value);
+        } else {
+            dataObj[cleanKey] = value;
+        }
+    }
+
+    // Adiciona os dados dinâmicos das listas da Aba 1
+    // Usa window.ripsPendentes como fonte principal, mas também coleta do DOM
+    // para garantir que RIPs adicionados via hidden inputs sejam capturados
+    const ripsDoForm = Array.isArray(dataObj.rips) ? dataObj.rips : (dataObj.rips ? [dataObj.rips] : []);
+    dataObj.rips = window.ripsPendentes || [];
+    ripsDoForm.forEach(function(rip) {
+        if (dataObj.rips.indexOf(rip) === -1) dataObj.rips.push(rip);
+    });
+
+    dataObj.cadastros_minimos = window.cadastrosPendentes || [];
+
+    dataObj.solicitacao_criacao_rip = window.solicitacaoCriacaoRip || "";
+    dataObj.solicitacao_anexos = window.solicitacaoAnexos || [];
+
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') 
+               || document.querySelector('input[name="_token"]')?.value;
+
+    try {
+        const res = await fetch('/draft/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': token,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                processo_id: processId,
+                aba: "1",
+                data: dataObj
+            })
+        });
+
+        if (res.ok) {
+            alert("Rascunho da Aba 1 salvo com sucesso!");
+            return true;
+        } else {
+            console.error("❌ Erro ao salvar rascunho da Aba 1:", await res.text());
+            alert("Erro ao salvar rascunho. Tente novamente.");
+            return false;
+        }
+    } catch(err) {
+        console.error("❌ [foco-01] Erro de conexão durante o salvamento:", err);
+        alert("Erro de conexão ao salvar rascunho.");
+        return false;
+    }
+};
+</script>

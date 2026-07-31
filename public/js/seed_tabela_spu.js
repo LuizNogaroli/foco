@@ -30,11 +30,13 @@ async function insertRips() {
     console.log('Iniciando inserção de RIPs na tabela_spu...');
     let inseridos = 0;
     
-    for (const req of reqs) {
+    const opcoesConceituacao = ["Terreno/acrescido de marinha", "Terreno/acrescido marginal", "Nacional interior"];
+
+    for (const [idx, req] of reqs.entries()) {
         const payload = {
             numero_rip: req.num,
             dados_json: {
-                conceituacao: "Área de domínio da União sob administração da SPU",
+                conceituacao: opcoesConceituacao[idx % 3],
                 condicao_urbanizacao: "Área urbana consolidada",
                 natureza_terreno: req.nat,
                 tipo_imovel: "Terreno com benfeitorias",

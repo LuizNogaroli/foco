@@ -10,7 +10,16 @@ Route::get('/processos/{processo}', [ProcessoController::class, 'show'])->middle
 Route::post('/processos/{processo}/tramitar', [ProcessoController::class, 'tramitar'])->middleware(['auth', 'verified'])->name('processos.tramitar');
 Route::post('/processos/{processo}/abrir', [ProcessoController::class, 'abrir'])->middleware(['auth', 'verified'])->name('processos.abrir');
 Route::post('/processos/{processo}/devolver', [ProcessoController::class, 'devolver'])->middleware(['auth', 'verified'])->name('processos.devolver');
+Route::post('/processos/{processo}/receber-devolucao', [ProcessoController::class, 'receberDevolucao'])->middleware(['auth', 'verified'])->name('processos.receber-devolucao');
 Route::get('/processos/{processo}/historico', [ProcessoController::class, 'historico'])->middleware(['auth', 'verified'])->name('processos.historico');
+Route::get('/processos/{processo}/historico/escolha', [ProcessoController::class, 'historicoEscolha'])->middleware(['auth', 'verified'])->name('processos.historico.escolha');
+Route::get('/processos/{processo}/historico/modelo-b', [ProcessoController::class, 'historicoModeloB'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-b');
+Route::get('/processos/{processo}/historico/modelo-c', [ProcessoController::class, 'historicoModeloC'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-c');
+Route::get('/processos/{processo}/historico/modelo-d', [ProcessoController::class, 'historicoModeloD'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-d');
+Route::get('/processos/{processo}/historico/modelo-e', [ProcessoController::class, 'historicoModeloE'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-e');
+Route::get('/processos/{processo}/historico/modelo-f', [ProcessoController::class, 'historicoModeloF'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-f');
+Route::get('/processos/{processo}/historico/modelo-g', [ProcessoController::class, 'historicoModeloG'])->middleware(['auth', 'verified'])->name('processos.historico.modelo-g');
+Route::get('/api/vocacoes', [ProcessoController::class, 'getVocacoes'])->middleware(['auth', 'verified'])->name('api.vocacoes');
 
 use App\Http\Controllers\DashboardController;
 

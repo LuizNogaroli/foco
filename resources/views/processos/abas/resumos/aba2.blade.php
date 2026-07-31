@@ -33,7 +33,7 @@
     </div>
     <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
         <span style="width:300px;font-weight:600;color:#334155;">Detalhes da Incidência Ambiental:</span>
-        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $dados2['incidencia_ambiental'] ?? '-' }}</span>
+        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($dados2['incidencia_ambiental'] ?? null) ? implode(', ', $dados2['incidencia_ambiental']) : ($dados2['incidencia_ambiental'] ?? '-') }}</span>
     </div>
     <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
         <span style="width:300px;font-weight:600;color:#334155;">Há riscos?</span>
@@ -41,7 +41,7 @@
     </div>
     <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
         <span style="width:300px;font-weight:600;color:#334155;">Detalhes dos Riscos:</span>
-        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $dados2['riscos'] ?? '-' }}</span>
+        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($dados2['riscos'] ?? null) ? implode(', ', $dados2['riscos']) : ($dados2['riscos'] ?? '-') }}</span>
     </div>
     <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
         <span style="width:300px;font-weight:600;color:#334155;">Há restrições urbanísticas/legais?</span>
@@ -49,7 +49,7 @@
     </div>
     <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
         <span style="width:300px;font-weight:600;color:#334155;">Detalhes das Restrições:</span>
-        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $dados2['restricoes'] ?? '-' }}</span>
+        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ is_array($dados2['restricoes'] ?? null) ? implode(', ', $dados2['restricoes']) : ($dados2['restricoes'] ?? '-') }}</span>
     </div>
 
     <div style="margin-top:16px; padding-top:16px; border-top:1px dashed #cbd5e1; margin-bottom: 10px;">

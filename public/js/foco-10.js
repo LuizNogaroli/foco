@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function () {
                   <span class="badge-status badge-pendente" id="badge-pendente-${m.id}">⏳ Pendente</span>
                   <span class="badge-status badge-assinado" id="badge-ok-${m.id}">✔ Assinado</span>
                 </div>
-                <span class="seta-icon" id="seta-${m.id}">▼</span>
+                <span class="seta-icon" id="seta-${m.id}">▶</span>
               </div>
               <div class="assinatura-corpo" id="corpo-${m.id}">
                 <div class="declaracao-box">

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>SPUnet - Login</title>
+    <title>Plataforma Integrada de Gestão do Patrimônio da União - Login</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -239,11 +239,10 @@
 
     <div class="login-container">
         <div class="brand-content">
-            <div class="brand-logo">
-                <span class="spu">SPU</span><span class="net">net</span>
+            <div class="brand-logo" style="font-size: 2.4rem; letter-spacing: -1px;">
+                <span class="spu">Plataforma</span><span class="net"> Integrada de Gestão do Patrimônio da União</span>
             </div>
             <div class="brand-divider"></div>
-            <div class="brand-subtitle">Sistema de Gestão do Patrimônio da União</div>
             <div class="brand-module">Módulo de Instrução Processual</div>
         </div>
 

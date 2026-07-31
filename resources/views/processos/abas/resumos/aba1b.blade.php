@@ -1,6 +1,8 @@
 @php
   $focoRips = $processo->foco?->rips ?? collect();
   $focoCadastros = $processo->foco?->cadastrosMinimos ?? collect();
+  $solicitacaoRip = $processo->foco?->aba1?->solicitacao_criacao_rip ?: ($dados1['solicitacao_criacao_rip'] ?? '');
+  $solicitacaoAnexos = $dados1['solicitacao_anexos'] ?? [];
 @endphp
 
 @if($focoRips->isEmpty() && $focoCadastros->isEmpty())
@@ -69,12 +71,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     const block = document.createElement('div');
     block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-    block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>🏠 Imóvel (RIP): ${rip}</span><span style="transition:transform 0.2s;">▼</span></div>
+    block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(90deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>🏠 Imóvel (RIP): ${rip}</span><span style="transition:transform 0.2s;">▶</span></div>
     <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">
       ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-      ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
       ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
       ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+      ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
       ${buildField('CEP', dadosSPU.cep)}
       ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
       ${buildField('Bairro', dadosSPU.bairro)}
@@ -98,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   cadastros.forEach((cad, idx) => {
     const block = document.createElement('div');
     block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-    block.innerHTML = `<div style="background:#f1f5f9;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>📍 Cadastro Mínimo ${idx+1}</span><span style="transition:transform 0.2s;">▼</span></div>
+    block.innerHTML = `<div style="background:#f1f5f9;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(90deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>📍 Cadastro Mínimo ${idx+1}</span><span style="transition:transform 0.2s;">▶</span></div>
     <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">
       ${buildField('CEP', cad.cep)}
       ${buildField('Logradouro', (cad.logradouro || '') + (cad.numero ? ', nº ' + cad.numero : ' S/N') + (cad.complemento ? ' - ' + cad.complemento : ''))}
@@ -114,9 +116,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 <div style="display: flex; flex-direction: column; gap: 10px;" id="rips-aba7-mysql">
   @foreach($focoRips as $rip)
   <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
+    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(90deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
       <span>🏠 Imóvel (RIP): {{ $rip->numero_rip }}</span>
-      <span style="transition:transform 0.2s;">▼</span>
+      <span style="transition:transform 0.2s;">▶</span>
     </div>
     <div style="padding:16px;display:none;background:#fff;" id="rip-spu-aba7-{{ $loop->index }}">
       <p style="color:#64748b;font-style:italic;font-size:0.85rem;">Carregando dados do SPU...</p>
@@ -130,9 +132,9 @@ document.addEventListener('DOMContentLoaded', async function() {
       function f(l,v){return `<div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">${l}:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">${v||'-'}</span></div>`;}
       if (el) el.innerHTML = `<div>
         ${f('Conceituação do Imóvel', d.conceituacao)}
-        ${f('Condição de Urbanização', d.condicao_urbanizacao)}
         ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
         ${f('Tipo de Imóvel', d.tipo_imovel)}
+        ${f('Condição de Urbanização', d.condicao_urbanizacao)}
         ${f('CEP', d.cep)}
         ${f('Logradouro', d.logradouro || d.endereco)}
         ${f('Bairro', d.bairro)}
@@ -156,9 +158,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   @foreach($focoCadastros as $cad)
   <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
+    <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(90deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
       <span>📝 Cadastro Mínimo #{{ $loop->iteration }} (Sem RIP)</span>
-      <span style="transition:transform 0.2s;">▼</span>
+      <span style="transition:transform 0.2s;">▶</span>
     </div>
     <div style="padding:16px;display:none;background:#fff;">
       <div style="display:flex;flex-direction:column;">
@@ -170,5 +172,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     </div>
   </div>
   @endforeach
+</div>
+@endif
+
+@if(!empty($solicitacaoRip))
+<div style="background:#fdf2f8; border:1px solid #fbcfe8; border-radius:8px; padding:14px 16px; margin-top:12px;">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+        <span style="font-size:1.1rem;">🔔</span>
+        <span style="font-weight:700; color:#9d174d; font-size:0.95rem;">Solicitação de Criação de RIP</span>
+    </div>
+    <div style="background:#fff; border:1px solid #f3f4f6; border-radius:5px; padding:10px 12px; color:#475569; font-size:0.9rem; line-height:1.5; white-space:pre-wrap;">{{ $solicitacaoRip }}</div>
+    @if(!empty($solicitacaoAnexos))
+    <div style="margin-top:10px;">
+        <div style="font-weight:600; color:#9d174d; font-size:0.85rem; margin-bottom:6px;">Anexos:</div>
+        @foreach($solicitacaoAnexos as $anexo)
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.85rem;padding:4px 8px;background:#fff;border-radius:4px;border:1px solid #f3f4f6;margin-bottom:4px;">
+            <span style="color:#9d174d;">📎</span>
+            <a href="{{ $anexo['base64'] ?? '#' }}" target="_blank" download="{{ $anexo['nome'] ?? 'anexo' }}" style="color:#1e3a5f;text-decoration:underline;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ $anexo['nome'] ?? '' }}">{{ $anexo['nome'] ?? 'Arquivo' }}</a>
+        </div>
+        @endforeach
+    </div>
+    @endif
 </div>
 @endif

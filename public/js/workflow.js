@@ -1,7 +1,7 @@
 const WORKFLOW_STAGES = {
   // --- FLUXO POSITIVO (AVANÇO) ---
   1:  { id_workflow: 1,  tag_fluxo: "Normal", status: "Aguardando análise",           instancia: "Painel de Requerimentos", perfil: "Todos",               descricao: "Aguardando iniciar a análise" },
-  2:  { id_workflow: 2,  tag_fluxo: "Normal", status: "Indicação do imóvel",          instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Indicação de imóvel/área" },
+  2:  { id_workflow: 2,  tag_fluxo: "Normal", status: "Indicação do Imóvel",          instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Indicação de imóvel/área" },
   3:  { id_workflow: 3,  tag_fluxo: "Normal", status: "Diagnóstico preliminar do imóvel",        instancia: "Caracterização",          perfil: "Equipe (Caracterização)", descricao: "Diagnóstico das características do imóvel" },
   4:  { id_workflow: 4,  tag_fluxo: "Normal", status: "Análise de viabilidade",          instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Análise Preliminar do Imóvel" },
   5:  { id_workflow: 5,  tag_fluxo: "Normal", status: "Validação análise de viabilidade - Chefia",             instancia: "Chefia",                  perfil: "Chefia",                  descricao: "Validação da Chefia no âmbito da SPU/UF" },
@@ -13,7 +13,7 @@ const WORKFLOW_STAGES = {
   11: { id_workflow: 11, tag_fluxo: "Normal", status: "Manifestação CDE",              instancia: "CDE",                     perfil: "CDE",                     descricao: "Deliberação da Comissão de Destinações Especiais" },
 
   // --- FLUXO NEGATIVO (DEVOLUÇÕES / SALTOS) ---
-  12: { id_workflow: 12, tag_fluxo: "Devolvido", status: "Indicação do imóvel",                    instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Devolução para indicação de outro imóvel/área, acrescentar ou excluir imóvel/área" },
+  12: { id_workflow: 12, tag_fluxo: "Devolvido", status: "Indicação do Imóvel",                    instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Devolução para indicação de outro imóvel/área, acrescentar ou excluir imóvel/área" },
   13: { id_workflow: 13, tag_fluxo: "Devolvido", status: "Diagnóstico preliminar do imóvel",                    instancia: "Caracterização",          perfil: "Equipe (Caracterização)", descricao: "Devolução para ajuste na análise preliminar do imóvel/área" },
   14: { id_workflow: 14, tag_fluxo: "Devolvido", status: "Análise de viabilidade",                    instancia: "Destinação",              perfil: "Equipe (Destinação)",     descricao: "Devolução para ajuste na proposta de destinação" },
   15: { id_workflow: 15, tag_fluxo: "Devolvido", status: "Validação análise de viabilidade - Coordenação-Geral",                    instancia: "Coordenação-Geral",       perfil: "Coordenação-Geral",       descricao: "Devolução do processo para ajustes" },

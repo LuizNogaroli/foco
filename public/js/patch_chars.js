@@ -10,19 +10,19 @@ code = code.replace(/>=é <\/button>/g, '>✖</button>');
 
 // The accordion icon initialization
 code = code.replace(/<span class="accordion-icon" [^>]+>é<\/span>/g, match => {
-    return match.replace('>é<', '>▼<');
+    return match.replace('>é<', '>▶<');
 });
 
 // The accordion toggle icon logic
 code = code.replace(/icon\.textContent = 'é';/g, "icon.textContent = '▲';");
-code = code.replace(/icon\.textContent = 'é';/g, "icon.textContent = '▼';"); // wait, one was up, one was down. Let's fix this manually
+code = code.replace(/icon\.textContent = 'é';/g, "icon.textContent = '▶';"); // wait, one was up, one was down. Let's fix this manually
 
 // Let's explicitly replace in toggleAccordion
 const toggleStart = code.indexOf('window.toggleAccordion = function');
 const toggleEnd = code.indexOf('};', toggleStart);
 let toggleStr = code.substring(toggleStart, toggleEnd + 2);
 toggleStr = toggleStr.replace("icon.textContent = 'é';", "icon.textContent = '▲';");
-toggleStr = toggleStr.replace("icon.textContent = 'é';", "icon.textContent = '▼';");
+toggleStr = toggleStr.replace("icon.textContent = 'é';", "icon.textContent = '▶';");
 code = code.substring(0, toggleStart) + toggleStr + code.substring(toggleEnd + 2);
 
 // There might be some other 'é' from 'Área', 'm²' etc. Let's check for specific ones.

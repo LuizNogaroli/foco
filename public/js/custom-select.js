@@ -1,52 +1,50 @@
 const CAMPO511_DATA = [
     {
-        group: "Uso por órgão/entidade da Administração Pública Federal",
+        group: "Regimes de Destinação",
         options: [
-            { value: "Afetação", label: "Afetação" },
-            { value: "Cessão de Uso gratuita APF", label: "Cessão de Uso gratuita — Adm. Pública Federal" },
-        ],
-    },
-    {
-        group: "Uso por ente federativo (Estado / DF / Município)",
-        options: [
-            { value: "Cessão de Uso gratuita ente federativo", label: "Cessão de Uso gratuita — ente federativo" },
-            { value: "Cessão de Uso onerosa ente federativo", label: "Cessão de Uso onerosa — ente federativo" },
-        ],
-    },
-    {
-        group: "Uso por entidade sem fins lucrativos",
-        options: [
-            { value: "Cessão de Uso gratuita entidade", label: "Cessão de Uso gratuita — entidade s/ fins lucrativos" },
-            { value: "Cessão de Uso onerosa entidade", label: "Cessão de Uso onerosa — entidade s/ fins lucrativos" },
-        ],
-    },
-    {
-        group: "Uso por particular (pessoa física ou jurídica)",
-        options: [
-            { value: "Concessão de Uso Especial para fins de Moradia (CUEM)", label: "Concessão de Uso Especial p/ fins de Moradia (CUEM)" },
-            { value: "Concessão de Direito Real de Uso (CDRU) gratuita", label: "Concessão de Direito Real de Uso (CDRU) gratuita" },
-            { value: "Concessão de Direito Real de Uso (CDRU) onerosa", label: "Concessão de Direito Real de Uso (CDRU) onerosa" },
-            { value: "Autorização de Uso", label: "Autorização de Uso" },
-            { value: "Locação", label: "Locação" },
+            { value: "Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)", label: "Acordo de Cooperação Técnica para Regularização Fundiária Urbana (ACT-Reurb)" },
+            { value: "Aforamento gratuito", label: "Aforamento gratuito" },
+            { value: "Aforamento oneroso", label: "Aforamento oneroso" },
             { value: "Arrendamento", label: "Arrendamento" },
-        ],
-    },
-    {
-        group: "Alienação",
-        options: [
-            { value: "Venda", label: "Venda" },
+            { value: "Autorização de obras", label: "Autorização de obras" },
+            { value: "Autorização de passagem gratuita", label: "Autorização de passagem gratuita" },
+            { value: "Autorização de passagem onerosa", label: "Autorização de passagem onerosa" },
+            { value: "Autorização de uso para fins comerciais", label: "Autorização de uso para fins comerciais" },
+            { value: "Autorização de uso sustentável", label: "Autorização de uso sustentável" },
+            { value: "Cessão de uso em condições especiais", label: "Cessão de uso em condições especiais" },
+            { value: "Cessão de uso gratuita", label: "Cessão de uso gratuita" },
+            { value: "Cessão de uso onerosa", label: "Cessão de uso onerosa" },
+            { value: "Cessão de uso provisória", label: "Cessão de uso provisória" },
+            { value: "Concessão de Direito de Superfície Gratuita", label: "Concessão de Direito de Superfície Gratuita" },
+            { value: "Concessão de Direito de Superfície Onerosa", label: "Concessão de Direito de Superfície Onerosa" },
+            { value: "Concessão de Direito Real de Laje Gratuita", label: "Concessão de Direito Real de Laje Gratuita" },
+            { value: "Concessão de Direito Real de Laje Onerosa", label: "Concessão de Direito Real de Laje Onerosa" },
+            { value: "Concessão de Direito Real de Uso Gratuita", label: "Concessão de Direito Real de Uso Gratuita" },
+            { value: "Concessão de Direito Real de Uso Onerosa", label: "Concessão de Direito Real de Uso Onerosa" },
+            { value: "Concessão de uso especial para fins de moradia (CUEM)", label: "Concessão de uso especial para fins de moradia (CUEM)" },
+            { value: "Dação em pagamento", label: "Dação em pagamento" },
+            { value: "Declaração de Interesse do Serviço Publico", label: "Declaração de Interesse do Serviço Publico" },
             { value: "Doação", label: "Doação" },
-            { value: "Legitimação Fundiária", label: "Legitimação Fundiária" },
-            { value: "Legitimação de Posse", label: "Legitimação de Posse" },
-            { value: "Alienação em REURB", label: "Alienação em REURB" },
-        ],
-    },
-    {
-        group: "Sem destinação",
-        options: [
-            { value: "Manutenção em vacância", label: "Manutenção em vacância" },
-        ],
-    },
+            { value: "Entrega", label: "Entrega" },
+            { value: "Entrega provisória", label: "Entrega provisória" },
+            { value: "Guarda Provisória", label: "Guarda Provisória" },
+            { value: "Inscrição de ocupação", label: "Inscrição de ocupação" },
+            { value: "Integralização de cotas em Fundo de Investimento Imobiliário", label: "Integralização de cotas em Fundo de Investimento Imobiliário" },
+            { value: "Investidura", label: "Investidura" },
+            { value: "Locação para terceiros", label: "Locação para terceiros" },
+            { value: "Permissão de uso para eventos de curta duração", label: "Permissão de uso para eventos de curta duração" },
+            { value: "Permissão de uso para fins residenciais", label: "Permissão de uso para fins residenciais" },
+            { value: "Permuta", label: "Permuta" },
+            { value: "Promessa de compra e venda", label: "Promessa de compra e venda" },
+            { value: "Remição do foro", label: "Remição do foro" },
+            { value: "Transferência de gestão de orlas e praias", label: "Transferência de gestão de orlas e praias" },
+            { value: "Transferência de direito real de uso para Reurb-S", label: "Transferência de direito real de uso para Reurb-S" },
+            { value: "Transferência de propriedade para fins de Reurb-S", label: "Transferência de propriedade para fins de Reurb-S" },
+            { value: "Transferência gratuita da posse", label: "Transferência gratuita da posse" },
+            { value: "Transferência onerosa da posse", label: "Transferência onerosa da posse" },
+            { value: "Venda", label: "Venda" }
+        ]
+    }
 ];
 
 function initCustomSelect(selectId) {
@@ -54,7 +52,7 @@ function initCustomSelect(selectId) {
     if (!select) return;
 
     // Sincroniza as opções do select nativo com a fonte de verdade (CAMPO511_DATA)
-    select.innerHTML = '<option value="">Selecione...</option>';
+    select.innerHTML = '<option value="">Selecione um regime...</option>';
     CAMPO511_DATA.forEach(group => {
         group.options.forEach(opt => {
             const option = document.createElement('option');
@@ -80,7 +78,7 @@ function initCustomSelect(selectId) {
 
     const placeholder = document.createElement('span');
     placeholder.className = 'cs-placeholder';
-    placeholder.textContent = 'Selecione (Tabela RESOLUÇÃO COMGC/SPU/MGI Nº 3/2025)...';
+    placeholder.textContent = 'Selecione um regime...';
 
     const arrow = document.createElement('span');
     arrow.className = 'cs-arrow';

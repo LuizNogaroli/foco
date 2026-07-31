@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/index.css') }}">
     <link rel="stylesheet" href="{{ asset('css/styles-forms.css') }}">
+    @vite(['resources/js/app.js'])
     <style>
         .active-tab {
             background-color: #cbd5e1 !important;
@@ -20,6 +21,7 @@
         window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZG1uenV3ZXl6aGlsZmN1bmdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTk5NTcsImV4cCI6MjA5NzQzNTk1N30.IqRxw3n2c-zNCccbgOUfh7wLy8eNnOVKJzwa8AsoSnU";
         window.CURRENT_PROCESS_ID = "{{ $processo->numero_requerimento }}";
         localStorage.setItem('CURRENT_PROCESS_ID', '{{ $processo->numero_requerimento }}');
+        window.LARAVEL_DADOS = @json($dados ?? []);
     </script>
     <style>
         .circle-btn.preenchida {
@@ -59,16 +61,35 @@
     @endif
 
     
-    <div class="main-content">
+    <div class="main-content" style="max-width: 1200px; margin: 0 auto; padding: 0 15px;">
+        <!-- Botão de Voltar -->
+        <div style="margin-bottom: 20px; display: flex; justify-content: flex-start;">
+            <a href="{{ route('processos.index') }}" class="btn-action" style="display: inline-flex; align-items: center; gap: 8px; font-size: 1rem; padding: 10px 20px; background-color: #f1f5f9; color: #475569; text-decoration: none; border-radius: 8px; font-weight: 600; border: 1px solid #cbd5e1; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.02);" onmouseover="this.style.backgroundColor='#e2e8f0'; this.style.color='#1e293b';" onmouseout="this.style.backgroundColor='#f1f5f9'; this.style.color='#475569';">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Voltar ao Painel
+            </a>
+        </div>
+        @if(isset($ultimaDevolucao))
+            <x-alerta-devolucao :devolucao="$ultimaDevolucao" :jaRecebido="$jaRecebido ?? false" :aba="$aba" :processoId="$processo->id" />
+            @if(isset($ultimaResolucao))
+                <x-alerta-devolucao-resolvida :resolucao="$ultimaResolucao" />
+            @endif
+        @endif
 
         @if ($aba == 1)
             @include('processos.abas.aba1', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
         @elseif ($aba == 2)
-            @include('processos.abas.aba2', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            <div id="aba2-container">
+                @include('processos.abas.aba2', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            </div>
         @elseif ($aba == 3)
             @include('processos.abas.aba3', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
         @elseif ($aba == 7)
-            @include('processos.abas.aba7', ['processo' => $processo, 'dados' => $dados])
+            <div id="aba7-container">
+                @include('processos.abas.aba7', ['processo' => $processo, 'dados' => $dados])
+            </div>
         @else
             <div style="text-align: center; padding: 50px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
                 <h2 style="color: #64748b;">Em breve</h2>
@@ -97,10 +118,12 @@
                 content.style.display = 'none';
             }
 
-            if (icon) {
-                icon.style.transform = isCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
-            }
-            header.classList.toggle('active', !isCollapsed);
+            requestAnimationFrame(() => {
+                if (icon) {
+                    icon.style.transform = isCollapsed ? 'rotate(90deg)' : 'rotate(0deg)';
+                }
+                header.classList.toggle('active', isCollapsed);
+            });
         }
     }
 </script>
@@ -110,14 +133,15 @@
 <script src="{{ asset('js/custom-select.js') }}"></script>
 <script src="{{ asset('js/formulario.js') }}"></script>
 <script src="{{ asset('js/hints.js') }}"></script>
+    <!-- autosave.js removido a pedido do usuario -->
 @if ($aba == 1)
-    <script src="{{ asset('js/foco-01.js') }}?v=20260720_02"></script>
+    <script src="{{ asset('js/foco-01.js') }}?v={{ time() }}"></script>
 @elseif ($aba == 2)
-    <script src="{{ asset('js/foco-02-v2.js') }}"></script>
+    <script src="{{ asset('js/foco-02-v2.js') }}?v={{ time() }}"></script>
 @elseif ($aba == 3)
     <!-- JS da Aba 3 está embutido no próprio aba3.blade.php -->
 @elseif ($aba == 7)
-    <script src="{{ asset('js/foco-07.js') }}"></script>
+    <!-- foco-07.js removido pois estava quebrando -->
 @endif
 
 </body>

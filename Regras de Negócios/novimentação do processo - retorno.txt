@@ -1,0 +1,23 @@
+temos um detalhe bem sutil que precisamos trabalhar... Entenda bem... quando os perfis das abas 1, 2 ou 3 trabalham em um processo que foi devolvido, eles preenchem a justificativa (dizendo o que foi feito para atender ao solicitado na devolução), daí eles clicam em Salvar e Enviar (ou seja, nesse caso o processo retorna ao curso normal)... No destino, ou seja, caso a alteração siga a sequência abaixo:
+
+1)
+1.1) Aba 1 altera o processo devolvido pela aba 3;
+1.2) Aba 1 clica em "Salvar e Enviar", processo muda o status para "Diagnóstico Preliminar" e volta para o painel de requerimentos;
+1.3) Quem acessa o processo agora é o perfil "Técnico - Caracterização", ao acessar a aba 2 o que deve aparecer no alto do processo não é o container "Devolver Processo", mas sim o container "Retornar Processo", com a justificativa do que foi feito.
+
+2)
+2.1) Aba 2 altera o processo devolvido pela aba 3;
+2.2) Aba 2 clica em "Salvar e Enviar", processo muda o status para "Análise de Viabilidade" e volta para o painel de requerimentos;
+2.3) Quem acessa o processo agora é o perfil "Técnico - Destinação", ao acessar a aba 3 o que deve aparecer no alto do processo não é o container "Devolver Processo", mas sim o container "Retornar Processo", com a justificativa do que foi feito.
+
+3)
+3.1) Aba 3 altera o processo devolvido pelos perfis de Chefia ou superiores;
+3.2) Aba 3 clica em "Salvar e Enviar", processo muda o status para "Validação - Chefia" e volta para o painel de requerimentos;
+3.3) Quem acessa o processo agora é o perfil "Chefia SPU/UF", ao acessar a aba 7 o que deve aparecer na ordem cronológica não é o container "Devolver Processo", mas sim o container "Retornar Processo", com a justificativa do que foi feito.
+
+
+Tudo deve ser registra na Aba 7 de forma equivalente ao que está no Histórico do processo (acessível pelícone de olho no painel de requerimentos)... A única é principal diferença é que no histórico temos somente a visualização do andamento do processo, já na Aba 7, temos a atividade da chefia e perfis superiores de se manifestar através das opções no container com label "Manifestação - <perfil>" e com o tipo de manifestação muda-se o status do processo e registra na aba 7 e no histórico do processo uma espécie de carimbo (como já é feito hoje).
+
+Revise esses procedimentos, se tiver dúvidas, pergunte e confira no código, pois está sutilmente diferente...
+
+Pelo que pude ver, em alguns pontos está carregando o container de "Devolver Processo" em vez de "Retornar Processo".

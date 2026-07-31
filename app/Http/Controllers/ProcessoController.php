@@ -12,6 +12,7 @@ use App\Models\FocoAba3;
 use App\Models\FocoRip;
 use App\Models\FocoCadastroMinimo;
 use App\Models\EquipeServidor;
+use App\Models\Tramite;
 
 class ProcessoController extends Controller
 {
@@ -222,6 +223,7 @@ class ProcessoController extends Controller
         $processos = $query->orderBy('created_at', 'desc')->paginate(10)->withQueryString();
 
         $statuses = [
+            'Aguardando Análise',
             'Indicação do Imóvel',
             'Diagnóstico Preliminar',
             'Análise de Viabilidade',
@@ -293,12 +295,41 @@ class ProcessoController extends Controller
             } elseif ($aba == 3 && $foco->aba3) {
                 $dados = $foco->aba3->toArray();
             }
+
+            // Disponibiliza a solicitação de criação de RIP da Aba 1 em todas as abas (exceto Aba 7, que carrega do tramite)
+            if ($aba != 1 && $aba != 7 && $foco->aba1 && $foco->aba1->solicitacao_criacao_rip) {
+                $dados['solicitacao_criacao_rip'] = $foco->aba1->solicitacao_criacao_rip;
+            }
         }
 
         // Fallback: buscar do tramite mais recente (legado)
         if (empty($dados)) {
             $latestTramite = $processo->tramites()->latest()->first();
             $dados = $latestTramite ? $latestTramite->dados_snapshot : [];
+        }
+
+        // Carregar rascunho (draft) do Laravel se existir para o usuário atual e aba
+        $draft = \App\Models\FocoDraft::where('processo_id', $processo->id)
+            ->where('user_id', auth()->id())
+            ->where('aba', $aba)
+            ->first();
+        if ($draft && is_array($draft->data)) {
+            $dados = array_merge($dados, $draft->data);
+        }
+
+        // Se não estiver na Aba 1, carrega também o draft da Aba 1 para obter
+        // solicitacao_criacao_rip e solicitacao_anexos (salvos via "Salvar Rascunho")
+        if ($aba != 1) {
+            $draftAba1 = \App\Models\FocoDraft::where('processo_id', $processo->id)
+                ->where('user_id', auth()->id())
+                ->where('aba', '1')
+                ->first();
+            if ($draftAba1 && is_array($draftAba1->data)) {
+                $dados['solicitacao_criacao_rip'] = $draftAba1->data['solicitacao_criacao_rip']
+                    ?? $dados['solicitacao_criacao_rip'] ?? '';
+                $dados['solicitacao_anexos'] = $draftAba1->data['solicitacao_anexos']
+                    ?? $dados['solicitacao_anexos'] ?? [];
+            }
         }
 
         // Buscar dados do portal de servicos
@@ -332,9 +363,51 @@ class ProcessoController extends Controller
             if ($foco->aba3) {
                 $dados3 = $foco->aba3->toArray();
             }
+
+            // Também carrega dados dos rascunhos (drafts) das abas anteriores
+            $draft1 = \App\Models\FocoDraft::where('processo_id', $processo->id)
+                ->where('user_id', auth()->id())
+                ->where('aba', '1')
+                ->first();
+            if ($draft1 && is_array($draft1->data)) {
+                $dados1 = array_merge($dados1, $draft1->data);
+            }
+
+            $draft2 = \App\Models\FocoDraft::where('processo_id', $processo->id)
+                ->where('user_id', auth()->id())
+                ->where('aba', '2')
+                ->first();
+            if ($draft2 && is_array($draft2->data)) {
+                $dados2 = array_merge($dados2, $draft2->data);
+            }
+
+            $draft3 = \App\Models\FocoDraft::where('processo_id', $processo->id)
+                ->where('user_id', auth()->id())
+                ->where('aba', '3')
+                ->first();
+            if ($draft3 && is_array($draft3->data)) {
+                $dados3 = array_merge($dados3, $draft3->data);
+            }
         }
 
-        return view('processos.show', compact('processo', 'aba', 'dados', 'dados1', 'dados2', 'dados3', 'rips', 'cadastros', 'requerimento', 'abasPreenchidas', 'abasDoPerfil', 'perfil'));
+        // Ultima devolucao e flag de recebimento (alerta de devolução)
+        $ultimaDevolucao = $processo->tramites()
+            ->where('acao', 'Devolvido')
+            ->orderByDesc('id')
+            ->first();
+        $jaRecebido = $processo->tramites()
+            ->where('acao', 'Recebido')
+            ->where('id', '>', $ultimaDevolucao ? $ultimaDevolucao->id : 0)
+            ->exists();
+
+        // Ultima resolucao da devolução (box "Devolução Resolvida" nas abas seguintes)
+        $ultimaResolucao = $processo->tramites()
+            ->where('acao', 'Devolução Resolvida')
+            ->where('id', '>', $ultimaDevolucao ? $ultimaDevolucao->id : 0)
+            ->orderByDesc('id')
+            ->first();
+
+        return view('processos.show', compact('processo', 'aba', 'dados', 'dados1', 'dados2', 'dados3', 'rips', 'cadastros', 'requerimento', 'abasPreenchidas', 'abasDoPerfil', 'perfil', 'ultimaDevolucao', 'jaRecebido', 'ultimaResolucao'));
     }
 
     // =============================================
@@ -354,7 +427,7 @@ class ProcessoController extends Controller
 
         // Assinaturas da Aba 7 (apenas se nao for rascunho)
         $acao = $request->input('acao_aba7');
-        $isRascunho = $request->has('acao_aba7_rascunho');
+        $isRascunho = $request->filled('acao_aba7_rascunho');
         if ($isRascunho) {
             $acao = $request->input('acao_aba7_rascunho');
         }
@@ -384,15 +457,66 @@ class ProcessoController extends Controller
             }
         }
 
-        // Criar tramite (audit trail imutavel)
+        // =============================================
+        // Criar tramite(s) - audit trail imutavel
+        // =============================================
+        $tramitacaoAntes = $processo->tramitacao;
+        $usuarioId = auth()->id();
+
+        $perfilLabels = [
+            'chefia' => 'Chefia',
+            'coordenacao' => 'Coordenação',
+            'superintendencia' => 'Superintendência',
+            'equipe_cg' => 'Equipe C.G.',
+            'coordenacao_geral' => 'Coordenação-Geral',
+            'direcao' => 'Direção',
+            'cde' => 'CDE',
+        ];
+
+        $tramiteAcao = 'Atualização';
+        $tramiteEtapa = 'Aba 7';
+
+        if (!$isRascunho && $effectiveAba && $effectiveAba != '7') {
+            $abaNum = (int) $effectiveAba;
+            $focoExistente = $processo->foco;
+            $jaSalva = false;
+            if ($abaNum == 1) {
+                $jaSalva = $focoExistente && $focoExistente->aba1;
+            } elseif ($abaNum == 2) {
+                $jaSalva = $focoExistente && $focoExistente->aba2;
+            } elseif ($abaNum == 3) {
+                $jaSalva = $focoExistente && $focoExistente->aba3;
+            }
+            $tramiteAcao = $jaSalva ? "Aba {$abaNum} Alterada" : "Aba {$abaNum} Salva";
+            $tramiteEtapa = "Preenchimento - Aba {$abaNum}";
+
+            // Retorno do processo em resposta a uma devolução
+            if (!empty($validatedData['resposta_devolucao'])) {
+                $processo->tramites()->create([
+                    'acao' => 'Devolução Resolvida',
+                    'etapa' => $tramiteEtapa,
+                    'usuario_id' => $usuarioId,
+                    'justificativa' => $validatedData['resposta_devolucao'],
+                    'dados_snapshot' => $newData,
+                ]);
+            }
+        } elseif (!$isRascunho) {
+            $tramiteAcao = 'Manifestação';
+            $tramiteEtapa = $perfilLabels[$acao] ?? 'Aba 7';
+        }
+
         $processo->tramites()->create([
-            'dados_snapshot' => $newData
+            'acao' => $tramiteAcao,
+            'etapa' => $tramiteEtapa,
+            'usuario_id' => $usuarioId,
+            'justificativa' => null,
+            'dados_snapshot' => $newData,
         ]);
 
         // =============================================
         // Salvar na tabela_foco (dados canonicos)
         // =============================================
-        if ($effectiveAba) {
+        if ($effectiveAba && $effectiveAba != '7') {
             $foco = Foco::firstOrCreate(
                 ['processo_id' => $processo->id],
                 ['aba_salva' => $effectiveAba]
@@ -630,6 +754,25 @@ class ProcessoController extends Controller
             }
         }
     }
+
+        // Registrar devolução quando a tramitação assumiu "Devolvido"
+        if (!$isRascunho && $processo->tramitacao === 'Devolvido' && $tramitacaoAntes !== 'Devolvido') {
+            $obsCandidatos = ['obs_chefia', 'obs_coordenacao', 'obs_superintendencia', 'obs_coordenacao_geral', 'obs_direcao', 'obs_cde'];
+            $justificativa = null;
+            foreach ($obsCandidatos as $campo) {
+                if (!empty($validatedData[$campo])) {
+                    $justificativa = $validatedData[$campo];
+                    break;
+                }
+            }
+            $processo->tramites()->create([
+                'acao' => 'Devolvido',
+                'etapa' => $tramiteEtapa,
+                'usuario_id' => $usuarioId,
+                'justificativa' => $justificativa,
+                'dados_snapshot' => $newData,
+            ]);
+        }
         
         $processo->save();
         $this->syncProcessoStatusToSupabase($processo);
@@ -654,6 +797,7 @@ class ProcessoController extends Controller
     public function devolver(Processo $processo, Request $request)
     {
         $aba = $request->input('aba', 1);
+        $etapaOrigem = $processo->status_atual;
 
         $processo->tramitacao = 'Devolvido';
         if ($aba == 1) {
@@ -670,11 +814,44 @@ class ProcessoController extends Controller
         $newData = array_merge($previousData, $validatedData);
 
         $processo->tramites()->create([
+            'acao' => 'Devolvido',
+            'etapa' => $etapaOrigem,
+            'usuario_id' => auth()->id(),
+            'justificativa' => $request->input('motivo_devolucao'),
             'dados_snapshot' => $newData
         ]);
 
-        return redirect()->route('processos.show', ['processo' => $processo->id, 'aba' => $aba])
+        return redirect()->route('processos.index')
                          ->with('success', 'Processo devolvido com sucesso!');
+    }
+
+    // =============================================
+    // RECEBER DEVOLUÇÃO - "Estou Ciente / Receber"
+    // =============================================
+    public function receberDevolucao(Processo $processo, Request $request)
+    {
+        $ultimaDevolucao = $processo->tramites()
+            ->where('acao', 'Devolvido')
+            ->orderByDesc('id')
+            ->first();
+
+        $processo->tramitacao = 'Normal';
+        $processo->save();
+        $this->syncProcessoStatusToSupabase($processo);
+
+        $latestTramite = $processo->tramites()->latest()->first();
+        $previousData = $latestTramite ? $latestTramite->dados_snapshot : [];
+        $newData = array_merge($previousData, $request->except(['_token']));
+
+        $processo->tramites()->create([
+            'acao' => 'Recebido',
+            'etapa' => $ultimaDevolucao ? $ultimaDevolucao->etapa : null,
+            'usuario_id' => auth()->id(),
+            'justificativa' => $ultimaDevolucao ? $ultimaDevolucao->justificativa : null,
+            'dados_snapshot' => $newData,
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
     private function syncProcessoStatusToSupabase(Processo $processo)
@@ -831,6 +1008,420 @@ class ProcessoController extends Controller
 
         $requerimento = \App\Models\Requerimento::find($processo->numero_requerimento);
 
-        return view('processos.historico', compact('processo', 'dados1', 'dados2', 'dados3', 'rips', 'cadastros', 'requerimento'));
+        $historicoTramites = $this->getHistoricoTramites($processo);
+
+        return view('processos.historico', compact('processo', 'dados1', 'dados2', 'dados3', 'rips', 'cadastros', 'requerimento', 'historicoTramites'));
+    }
+
+    // =============================================
+    // HISTÓRICO - Página de escolha do modelo
+    // =============================================
+    public function historicoEscolha(Processo $processo)
+    {
+        return view('processos.historico_escolha', compact('processo'));
+    }
+
+    private function getHistoricoTramites(Processo $processo)
+    {
+        return $processo->tramites()
+            ->with('usuario')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+    }
+
+    private function isAcaoSalva(string $acao): bool
+    {
+        return in_array($acao, ['Aba 1 Salva', 'Aba 2 Salva', 'Aba 3 Salva', 'Aba 1 Alterada', 'Aba 2 Alterada', 'Aba 3 Alterada', 'Atualização']);
+    }
+
+    private function getPerfilManifestacao(Tramite $tramite): string
+    {
+        $etapa = $tramite->etapa ?? '';
+
+        $etapaMap = [
+            'Chefia' => 'Chefia',
+            'Coordenação' => 'Coordenação',
+            'Superintendência' => 'Superintendência',
+            'Equipe C.G.' => 'Equipe C.G.',
+            'Coordenação-Geral' => 'Coordenação-Geral',
+            'Direção' => 'Direção',
+            'CDE' => 'CDE',
+        ];
+        foreach ($etapaMap as $chave => $perfil) {
+            if (str_contains($etapa, $chave)) {
+                return $perfil;
+            }
+        }
+
+        $prefixMap = [
+            'chefia' => 'Chefia',
+            'coordenacao' => 'Coordenação',
+            'superintendencia' => 'Superintendência',
+            'equipe_cg' => 'Equipe C.G.',
+            'coordenacao_geral' => 'Coordenação-Geral',
+            'direcao' => 'Direção',
+            'cde' => 'CDE',
+        ];
+        $dados = is_array($tramite->dados_snapshot) ? $tramite->dados_snapshot : [];
+        foreach (array_reverse($prefixMap, true) as $prefix => $perfil) {
+            if (!empty($dados['assinatura_' . $prefix . '_nome'])) {
+                return $perfil;
+            }
+        }
+
+        return '';
+    }
+
+    private function getTipoTramite(Tramite $tramite): string
+    {
+        $acao = $tramite->acao ?? '';
+
+        if ($acao === 'Devolvido') {
+            return 'devolucao';
+        }
+        if ($acao === 'Recebido') {
+            return 'recebido';
+        }
+        if ($acao === 'Devolução Resolvida') {
+            return 'resolucao';
+        }
+        if ($this->isAcaoSalva($acao)) {
+            return 'salva';
+        }
+        return 'manifestacao';
+    }
+
+    private function getLabelTramite(Tramite $tramite): string
+    {
+        $acao = $tramite->acao ?? '';
+        $etapa = $tramite->etapa ?? '';
+
+        if ($acao === 'Devolvido') {
+            return '⚠️ Devolução';
+        }
+        if ($acao === 'Recebido') {
+            return '✅ Recebido';
+        }
+        if ($acao === 'Devolução Resolvida') {
+            return '✅ Devolução Resolvida';
+        }
+
+        if ($this->isAcaoSalva($acao)) {
+            if (str_contains($acao, 'Aba 1') || str_contains($etapa, 'Aba 1')) {
+                return '📋 Dados do Requerimento';
+            }
+            if (str_contains($acao, 'Aba 2') || str_contains($etapa, 'Aba 2')) {
+                return '📋 Diagnóstico Preliminar';
+            }
+            if (str_contains($acao, 'Aba 3') || str_contains($etapa, 'Aba 3')) {
+                return '📋 Análise de Viabilidade';
+            }
+            return '📋 Dados salvos';
+        }
+
+        $perfil = $this->getPerfilManifestacao($tramite);
+        return '📝 ' . ($perfil ?: 'Manifestação');
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo B (Timeline Compacta)
+    // =============================================
+    public function historicoModeloB(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+
+        return view('processos.historico_modelo_b', compact('processo', 'historicoTramites'));
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo C (KanBan por Perfil)
+    // =============================================
+    public function historicoModeloC(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+
+        $colunas = [
+            'Equipe Destinação'     => collect(),
+            'Equipe Caracterização' => collect(),
+            'Chefia'                => collect(),
+            'Coordenação'           => collect(),
+            'Superintendência'      => collect(),
+            'Equipe C.G.'           => collect(),
+            'Coordenação-Geral'     => collect(),
+            'Direção'               => collect(),
+            'CDE'                   => collect(),
+            'Sistema'               => collect(),
+            'Outros'                => collect(),
+        ];
+
+        foreach ($historicoTramites as $tramite) {
+            $perfil = $this->getColunaTramite($tramite);
+            if (!isset($colunas[$perfil])) {
+                $perfil = 'Outros';
+            }
+            $colunas[$perfil]->push($tramite);
+        }
+
+        return view('processos.historico_modelo_c', compact('processo', 'historicoTramites', 'colunas'));
+    }
+
+    private function getColunaTramite(Tramite $tramite): string
+    {
+        $etapa = $tramite->etapa ?? '';
+        $dados = is_array($tramite->dados_snapshot) ? $tramite->dados_snapshot : [];
+
+        $etapaMap = [
+            'Preenchimento - Aba 1' => 'Equipe Destinação',
+            'Preenchimento - Aba 2' => 'Equipe Caracterização',
+            'Preenchimento - Aba 3' => 'Equipe Destinação',
+            'Validação - Chefia' => 'Chefia',
+            'Validação - Coordenação' => 'Coordenação',
+            'Deliberação - Superintendência' => 'Superintendência',
+            'Validação - Equipe C.G.' => 'Equipe C.G.',
+            'Validação - Coordenação-Geral' => 'Coordenação-Geral',
+            'Validação - Direção' => 'Direção',
+            'Deliberação - CDE' => 'CDE',
+            'Manifestação CDE' => 'CDE',
+        ];
+        foreach ($etapaMap as $chave => $perfil) {
+            if (str_contains($etapa, $chave)) {
+                return $perfil;
+            }
+        }
+
+        $prefixMap = [
+            'chefia' => 'Chefia',
+            'coordenacao' => 'Coordenação',
+            'superintendencia' => 'Superintendência',
+            'equipe_cg' => 'Equipe C.G.',
+            'coordenacao_geral' => 'Coordenação-Geral',
+            'direcao' => 'Direção',
+            'cde' => 'CDE',
+        ];
+        foreach ($prefixMap as $prefix => $perfil) {
+            if (!empty($dados['assinatura_' . $prefix . '_nome'])) {
+                return $perfil;
+            }
+        }
+
+        if ($tramite->usuario && method_exists($tramite->usuario, 'getRoleNames')) {
+            $roles = $tramite->usuario->getRoleNames()->toArray();
+            $perfis = ['Equipe Destinação', 'Equipe Caracterização', 'Chefia', 'Coordenação', 'Superintendência', 'Equipe C.G.', 'Coordenação-Geral', 'Direção', 'CDE'];
+            foreach ($roles as $role) {
+                if (in_array($role, $perfis)) {
+                    return $role;
+                }
+            }
+        }
+
+        return $tramite->usuario ? 'Outros' : 'Sistema';
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo D (Grafo de Fluxo de Estados)
+    // =============================================
+    public function historicoModeloD(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+        $fluxo = $this->montarFluxoEstados($processo);
+
+        return view('processos.historico_modelo_d', compact('processo', 'historicoTramites', 'fluxo'));
+    }
+
+    private function montarFluxoEstados(Processo $processo): array
+    {
+        $tramites = $this->getHistoricoTramites($processo);
+
+        $nos = [];
+        $arestas = [];
+
+        foreach ($tramites as $tramite) {
+            $tipo = $this->getTipoTramite($tramite);
+            $nos[$tramite->id] = [
+                'id' => $tramite->id,
+                'tipo' => $tipo,
+                'label' => $this->getLabelTramite($tramite),
+                'data' => \Carbon\Carbon::parse($tramite->created_at)->format('d/m/Y H:i'),
+                'usuario' => $tramite->usuario ? $tramite->usuario->name : 'Sistema',
+            ];
+        }
+
+        $ids = array_keys($nos);
+        for ($i = 0; $i < count($ids) - 1; $i++) {
+            $tipoAresta = $nos[$ids[$i + 1]]['tipo'];
+            if ($tipoAresta === 'resolucao') {
+                $tipoAresta = 'recebido';
+            }
+            $arestas[] = ['tipo' => $tipoAresta];
+        }
+
+        return ['nos' => $nos, 'arestas' => $arestas];
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo E (BPMN com Gateway e Swimlane)
+    // =============================================
+    public function historicoModeloE(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+        $blocks = $this->montarBlocosHistorico($processo);
+
+        return view('processos.historico_modelo_e', compact('processo', 'historicoTramites', 'blocks'));
+    }
+
+    private function montarBlocosHistorico(Processo $processo): array
+    {
+        $tramites = $this->getHistoricoTramites($processo);
+        $blocks = [];
+        $i = 0;
+        $n = count($tramites);
+
+        while ($i < $n) {
+            $tramite = $tramites[$i];
+
+            if (($tramite->acao ?? '') === 'Devolvido') {
+                $start = $tramite;
+                $end = null;
+                $events = [];
+                $i++;
+
+                while ($i < $n) {
+                    $evt = $tramites[$i];
+                    if (($evt->acao ?? '') === 'Devolução Resolvida') {
+                        $end = $evt;
+                        $i++;
+                        break;
+                    }
+                    $events[] = $evt;
+                    $i++;
+                }
+
+                $blocks[] = ['type' => 'cycle', 'start' => $start, 'end' => $end, 'events' => $events];
+            } else {
+                $blocks[] = ['type' => 'main', 'tramite' => $tramite];
+                $i++;
+            }
+        }
+
+        return $blocks;
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo F (Colunas por Passagem)
+    // =============================================
+    public function historicoModeloF(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+        $columns = $this->montarColunasPassagem($processo);
+        $totalCols = count($columns);
+
+        return view('processos.historico_modelo_f', compact('processo', 'historicoTramites', 'columns', 'totalCols'));
+    }
+
+    private function montarColunasPassagem(Processo $processo): array
+    {
+        $tramites = $this->getHistoricoTramites($processo);
+        $columns = [];
+        $atual = null;
+
+        foreach ($tramites as $tramite) {
+            if ($atual === null) {
+                $atual = ['items' => [], 'endReason' => null];
+            }
+
+            $atual['items'][] = $tramite;
+
+            if (($tramite->acao ?? '') === 'Devolvido') {
+                $atual['endReason'] = $tramite->acao;
+                $columns[] = $atual;
+                $atual = null;
+            }
+        }
+
+        if ($atual !== null) {
+            $columns[] = $atual;
+        }
+
+        if (count($columns) === 0) {
+            $columns[] = ['items' => [], 'endReason' => null];
+        }
+
+        return $columns;
+    }
+
+    // =============================================
+    // HISTÓRICO - Modelo G (Matriz Abas × Perfis × Passagens)
+    // =============================================
+    public function historicoModeloG(Processo $processo)
+    {
+        $historicoTramites = $this->getHistoricoTramites($processo);
+        $columns = $this->montarColunasPassagem($processo);
+
+        $rowDefs = [
+            'aba1' => ['icon' => '📋', 'label' => 'Dados do Requerimento'],
+            'aba2' => ['icon' => '📋', 'label' => 'Diagnóstico Preliminar'],
+            'aba3' => ['icon' => '📋', 'label' => 'Análise de Viabilidade'],
+            'chefia' => ['icon' => '🖊️', 'label' => 'Chefia'],
+            'coordenacao' => ['icon' => '🖊️', 'label' => 'Coordenação'],
+            'superintendencia' => ['icon' => '🖊️', 'label' => 'Superintendência'],
+            'equipe_cg' => ['icon' => '🖊️', 'label' => 'Equipe C.G.'],
+            'coordenacao_geral' => ['icon' => '🖊️', 'label' => 'Coordenação-Geral'],
+            'direcao' => ['icon' => '🖊️', 'label' => 'Direção'],
+            'cde' => ['icon' => '🖊️', 'label' => 'CDE'],
+            'devolucao' => ['icon' => '⚠️', 'label' => 'Devolução'],
+        ];
+
+        $perfilRows = [
+            'Chefia' => 'chefia',
+            'Coordenação' => 'coordenacao',
+            'Superintendência' => 'superintendencia',
+            'Equipe C.G.' => 'equipe_cg',
+            'Coordenação-Geral' => 'coordenacao_geral',
+            'Direção' => 'direcao',
+            'CDE' => 'cde',
+        ];
+
+        $matrix = [];
+        foreach ($columns as $colIdx => $col) {
+            $matrix[$colIdx] = [];
+            foreach ($col['items'] as $tramite) {
+                $rowKey = $this->getRowMatriz($tramite, $perfilRows);
+                if ($rowKey !== null) {
+                    $matrix[$colIdx][$rowKey] = $tramite;
+                }
+            }
+        }
+
+        return view('processos.historico_modelo_g', compact('processo', 'historicoTramites', 'columns', 'rowDefs', 'matrix'));
+    }
+
+    private function getRowMatriz(Tramite $tramite, array $perfilRows): ?string
+    {
+        $acao = $tramite->acao ?? '';
+        $etapa = $tramite->etapa ?? '';
+
+        if ($this->isAcaoSalva($acao)) {
+            if (str_contains($acao, 'Aba 1') || str_contains($etapa, 'Aba 1')) {
+                return 'aba1';
+            }
+            if (str_contains($acao, 'Aba 2') || str_contains($etapa, 'Aba 2')) {
+                return 'aba2';
+            }
+            if (str_contains($acao, 'Aba 3') || str_contains($etapa, 'Aba 3')) {
+                return 'aba3';
+            }
+        }
+
+        if ($acao === 'Devolvido' || $acao === 'Devolução Resolvida' || $acao === 'Recebido') {
+            return 'devolucao';
+        }
+
+        $perfil = $this->getPerfilManifestacao($tramite);
+        if ($perfil !== '' && isset($perfilRows[$perfil])) {
+            return $perfilRows[$perfil];
+        }
+
+        return null;
     }
 }

@@ -440,27 +440,24 @@
             }
         }
 
-        // Remove o loader após simular 1.2 segundos de busca de dados
-        console.log("🚩 [sync.js] Iniciando temporizador de 1.2 segundos...");
-        setTimeout(() => {
-            console.log("🚩 [sync.js] Temporizador esgotado. Populando formulário e ocultando overlay.");
-            isSimulatedLoadFinished = true;
-            
-            // Fallback robusto: se o db.js recriou o objeto e perdemos o postMessage por milissegundos
-            if (window.parent && window.parent.formDataState && Object.keys(window.parent.formDataState).length > 0) {
-                dbState = window.parent.formDataState;
-            }
-            
-            populateForm(dbState);
+        // Executa imediatamente o preenchimento de dados e remove o overlay
+        console.log("🚩 [sync.js] Populando formulário e ocultando overlay imediatamente.");
+        isSimulatedLoadFinished = true;
+        
+        // Fallback robusto: se o db.js recriou o objeto e perdemos o postMessage por milissegundos
+        if (window.parent && window.parent.formDataState && Object.keys(window.parent.formDataState).length > 0) {
+            dbState = window.parent.formDataState;
+        }
+        
+        populateForm(dbState);
 
-            loader.style.opacity = '0';
-            setTimeout(() => {
-                if (loader.parentNode) {
-                    loader.remove();
-                    console.log("🚩 [sync.js] Overlay removido do DOM.");
-                }
-            }, 400);
-        }, 1200);
+        loader.style.opacity = '0';
+        setTimeout(() => {
+            if (loader.parentNode) {
+                loader.remove();
+                console.log("🚩 [sync.js] Overlay removido do DOM.");
+            }
+        }, 400);
 
         // Escuta evento de atualização do banco (caso os dados cheguem depois do carregamento da página)
         window.addEventListener('message', (event) => {

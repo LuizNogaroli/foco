@@ -158,7 +158,7 @@ window.toggleAccordion = function(header) {
         if(icon) icon.textContent = '▲';
     } else {
         content.style.display = 'none';
-        if(icon) icon.textContent = '▼';
+        if(icon) icon.textContent = '▶';
     }
 };
 

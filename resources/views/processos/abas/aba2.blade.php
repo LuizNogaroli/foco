@@ -1,3 +1,12 @@
+<script>
+    window.INLINE_SOLICITACAO_RIP = @json($dados['solicitacao_criacao_rip'] ?? ($processo->foco?->aba1?->solicitacao_criacao_rip ?? ''));
+    window.INLINE_SOLICITACAO_ANEXOS = @json($dados['solicitacao_anexos'] ?? []);
+    window.INLINE_DOCUMENTOS_ABA2 = @json($dados['documentos_aba2'] ?? []);
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 <style>
   .custom-empty-select { background-color: #ffffff !important; border: 1px solid #3b82f6 !important; box-shadow: 0 0 4px rgba(59,130,246,0.3) !important; }
   .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
@@ -75,16 +84,27 @@
 
     <h2>Diagnóstico Preliminar</h2>
 
+    @if($errors->any())
+        <div style="background-color: #fee2e2; color: #991b1b; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ef4444;">
+            <strong>Atenção:</strong>
+            <ul style="margin-top: 8px; margin-bottom: 0;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <!-- ========== ACCORDIONS ABA 1 (SOMENTE LEITURA) ========== -->
     <div class="accordion-container" style="margin-bottom: 25px; display: flex; flex-direction: column; gap: 15px;">
 
       <!-- Aba 1a: Dados do Requerimento -->
-      <div class="accordion-item" id="acc_aba1a" style="border: 2px solid #1e3a5f; border-radius: 8px; overflow: hidden;">
-        <div class="accordion-header" style="background-color: #1e3a5f; color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em;" onclick="const body = this.nextElementSibling; const icon = this.querySelector('span:last-child'); if(body.style.display === 'none'){ body.style.display = 'block'; icon.style.transform = 'rotate(180deg)'; } else { body.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }">
-          <span>📋 Dados do Requerimento</span>
-          <span style="transition: transform 0.3s; font-size: 1.2em;">▼</span>
+      <div class="accordion-item" id="acc_aba1a" style="border: none;">
+        <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+          <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📋 Dados do Requerimento</span>
+          <span class="accordion-icon">▶</span>
         </div>
-        <div class="accordion-body" style="padding: 20px; display: none; border-top: 1px solid #cbd5e1; background: #fff;">
+        <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
           @php $req = $requerimento ?? null; @endphp
           <div style="display:flex;flex-direction:column;">
             <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Nome do Requerente:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $req?->nome_requerente ?? '-' }}</span></div>
@@ -110,12 +130,12 @@
       </div>
 
       <!-- Aba 1b: Indicação do Imóvel -->
-      <div class="accordion-item" id="acc_aba1b" style="border: 2px solid #1e3a5f; border-radius: 8px; overflow: hidden;">
-        <div class="accordion-header" style="background-color: #1e3a5f; color: white; padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em;" onclick="const body = this.nextElementSibling; const icon = this.querySelector('span:last-child'); if(body.style.display === 'none'){ body.style.display = 'block'; icon.style.transform = 'rotate(180deg)'; } else { body.style.display = 'none'; icon.style.transform = 'rotate(0deg)'; }">
-          <span>📍 RIP(s) ou Cadastro(s) Mínimo(s)</span>
-          <span style="transition: transform 0.3s; font-size: 1.2em;">▼</span>
+      <div class="accordion-item" id="acc_aba1b" style="border: none;">
+        <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+          <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📍 RIP(s) ou Cadastro(s) Mínimo(s)</span>
+          <span class="accordion-icon">▶</span>
         </div>
-        <div class="accordion-body" style="padding: 20px; display: none; border-top: 1px solid #cbd5e1; background: #fff;">
+        <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
           @php
             $focoRips = $processo->foco?->rips ?? collect();
             $focoCadastros = $processo->foco?->cadastrosMinimos ?? collect();
@@ -228,13 +248,17 @@
                 let dadosSPU = {};
                 try { if (typeof window.fetchSPU === 'function') dadosSPU = await window.fetchSPU(rip); } catch(e) {}
                 const block = document.createElement('div');
-                block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-                block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>🏠 Imóvel (RIP): ${rip}</span><span style="transition:transform 0.2s;">▼</span></div>
-                <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">
+                block.className = 'accordion-item';
+                block.style.cssText = 'border:none;margin-bottom:8px;';
+                block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                    <span class="accordion-title" style="font-weight: 600; color: #ffffff;">🏠 Imóvel (RIP): ${rip}</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">
                   ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-                  ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                   ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
                   ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+                  ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                   ${buildField('CEP', dadosSPU.cep)}
                   ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
                   ${buildField('Bairro', dadosSPU.bairro)}
@@ -257,9 +281,13 @@
 
               cadastros.forEach((cad, idx) => {
                 const block = document.createElement('div');
-                block.style.cssText = 'background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:8px;';
-                block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span><span style="transition:transform 0.2s;">▼</span></div>
-                <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">${buildField('CEP',cad.cep)}${buildField('Área (m²)',cad.area)}${buildField('Logradouro',cad.logradouro||cad.endereco)}${buildField('Município/UF',(cad.municipio||'')+' / '+(cad.uf||''))}</div></div>`;
+                block.className = 'accordion-item';
+                block.style.cssText = 'border:none;margin-bottom:8px;';
+                block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                    <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span>
+                    <span class="accordion-icon">▶</span>
+                </div>
+                <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">${buildField('CEP',cad.cep)}${buildField('Área (m²)',cad.area)}${buildField('Logradouro',cad.logradouro||cad.endereco)}${buildField('Município/UF',(cad.municipio||'')+' / '+(cad.uf||''))}</div></div>`;
                 container.appendChild(block);
               });
             });
@@ -269,11 +297,11 @@
             <div style="display: flex; flex-direction: column; gap: 10px;" id="rips-aba2-mysql">
               @foreach($focoRips as $rip)
               <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
+                <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                   <span>🏠 Imóvel (RIP): {{ $rip->numero_rip }}</span>
-                  <span style="transition:transform 0.2s;">▼</span>
+                  <span class="accordion-icon">▶</span>
                 </div>
-                <div style="padding:16px;display:none;background:#fff;" id="rip-spu-aba2-{{ $loop->index }}">
+                <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;" id="rip-spu-aba2-{{ $loop->index }}">
                   <p style="color:#64748b;font-style:italic;font-size:0.85rem;">Carregando dados do SPU...</p>
                 </div>
               </div>
@@ -285,9 +313,9 @@
                   function f(l,v){return `<div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">${l}:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">${v||'-'}</span></div>`;}
                   el.innerHTML = `<div>
                     ${f('Conceituação do Imóvel', d.conceituacao)}
-                    ${f('Condição de Urbanização', d.condicao_urbanizacao)}
                     ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
                     ${f('Tipo de Imóvel', d.tipo_imovel)}
+                    ${f('Condição de Urbanização', d.condicao_urbanizacao)}
                     ${f('CEP', d.cep)}
                     ${f('Logradouro', d.logradouro || d.endereco)}
                     ${f('Bairro', d.bairro)}
@@ -310,11 +338,11 @@
               @endforeach
               @foreach($focoCadastros as $cad)
               <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                <div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(180deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}">
+                <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                   <span>📝 Cadastro Mínimo #{{ $loop->index+1 }} (Sem RIP)</span>
-                  <span style="transition:transform 0.2s;">▼</span>
+                  <span class="accordion-icon">▶</span>
                 </div>
-                <div style="padding:16px;display:none;background:#fff;">
+                <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
                   <div><strong>CEP:</strong> {{ $cad->cep ?? '-' }} | <strong>Área:</strong> {{ $cad->area_m2 ?? '-' }}m²</div>
                 </div>
               </div>
@@ -341,10 +369,31 @@
         }
     @endphp
     <fieldset @if(!$canEditAba2) disabled @endif>
-    <form method="POST" action="{{ route('processos.tramitar', $processo->id) }}" id="form02">
+    <form action="{{ route('processos.tramitar', $processo->id) }}" method="POST" hx-post="{{ route('processos.tramitar', $processo->id) }}" hx-target="#aba2-container" hx-indicator="#form-indicator-aba2" id="form02">
+      @csrf
+        <div id="form-indicator-aba2" class="htmx-indicator" style="display:none; color: #475569; margin-bottom: 10px;">⏳ Processando...</div>
         @csrf
         <input type="hidden" name="aba_atual" value="2">
         <input type="hidden" name="next_aba" value="index">
+
+            <!-- Bloco Retornar Processo -->
+            @if($processo->tramitacao === 'Devolvido')
+                @if(isset($respostaDevolucao))
+                <div id="blocoRespostaDevolutivaAba2" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">✅ Retornar Processo</h4>
+                    <p style="margin-bottom: 10px; font-size: 0.9em; color: #166534;">
+                        Justificativa preenchida por <strong>{{ $respostaDevolucao['usuario'] }}</strong> em {{ $respostaDevolucao['data'] }}
+                    </p>
+                    <div style="width: 100%; min-height: 80px; padding: 15px; border: 1px solid #86efac; border-radius: 4px; background-color: #f8fafc; font-family: inherit; font-size: 14px; color: #334155; white-space: pre-wrap;">{{ $respostaDevolucao['texto'] }}</div>
+                </div>
+                @else
+                <div id="blocoRespostaDevolutivaAba2" class="editavel" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                    <h4 style="color: #16a34a; margin-top: 0; border-bottom: 1px solid #86efac; padding-bottom: 8px;">Retornar Processo</h4>
+                    <label for="resposta_devolucao" style="font-weight: bold; color: #166534;">Descreva o que foi corrigido ou complementado nesta etapa (Obrigatório para enviar):</label>
+                    <textarea id="resposta_devolucao" name="resposta_devolucao" required style="width: 100%; min-height: 100px; padding: 10px; border: 1px solid #86efac; border-radius: 4px; margin-top: 10px; font-family: inherit; font-size: 14px;">{{ $dados['resposta_devolucao'] ?? '' }}</textarea>
+                </div>
+                @endif
+            @endif
 
       <!-- ========== ACCORDION INDICAÇÕES ========== -->
 <style>
@@ -396,17 +445,15 @@
               display: block;
           }
           .accordion-icon {
-              font-size: 1.2em;
+              font-size: 0.9rem;
               transition: transform 0.3s;
-          }
-          #acc_aba1 .accordion-icon {
               color: white !important;
           }
           .type-rip .accordion-icon, .type-cadastro .accordion-icon {
               color: #1e3a5f !important;
           }
           .active .accordion-icon {
-              transform: rotate(180deg);
+              transform: rotate(90deg);
           }
           /* Ocultar botões de consulta/edição conforme solicitado */
           .edit-toggle {
@@ -474,7 +521,18 @@
                 <!-- Campos exibidos quando Desocupado -->
                 <div id="bloco-desocupado" style="display: none; flex-direction: column; gap: 6px; margin-top: 8px;">
                   <label for="campo-tempo-desocupacao">Tempo de desocupação:</label>
-                  <input type="text" id="campo-tempo-desocupacao" name="tempo_desocupacao" placeholder="Ex: 05 anos, desde 03/2010 ou desde 2010" value="{{ $dados['tempo_desocupacao'] ?? '' }}" />
+                  @php
+                    $dt = $dados['tempo_desocupacao'] ?? '';
+                    $mesAno = '';
+                    if (preg_match('/^\d{4}-\d{2}$/', $dt)) {
+                      $mesAno = $dt;
+                    } elseif (preg_match('/^(\d{2})\/(\d{4})$/', $dt, $m)) {
+                      $mesAno = $m[2] . '-' . $m[1];
+                    } elseif (preg_match('/^(\d{4})$/', $dt, $m)) {
+                      $mesAno = $m[1] . '-01';
+                    }
+                  @endphp
+                  <input type="month" id="campo-tempo-desocupacao" name="tempo_desocupacao" value="{{ $mesAno }}" />
 
                   <label for="obs-desocupado">Observações:</label>
                   <textarea id="obs-desocupado" name="obs_desocupado" placeholder="Observações sobre a desocupação...">{{ $dados['obs_desocupado'] ?? '' }}</textarea>
@@ -483,7 +541,18 @@
                 <!-- Campos exibidos quando Ocupado regularmente ou Ocupado irregularmente -->
                 <div id="bloco-ocupado" style="display: none; flex-direction: column; gap: 6px; margin-top: 8px;">
                   <label for="campo-data-conhecimento-ocupacao">Data de conhecimento da ocupação:</label>
-                  <input type="text" id="campo-data-conhecimento-ocupacao" name="data_conhecimento_ocupacao" placeholder="Ex: 03/2010 ou 2010" value="{{ $dados['data_conhecimento_ocupacao'] ?? '' }}" />
+                  @php
+                    $dtOcup = $dados['data_conhecimento_ocupacao'] ?? '';
+                    $mesAnoOcup = '';
+                    if (preg_match('/^\d{4}-\d{2}$/', $dtOcup)) {
+                      $mesAnoOcup = $dtOcup;
+                    } elseif (preg_match('/^(\d{2})\/(\d{4})$/', $dtOcup, $m)) {
+                      $mesAnoOcup = $m[2] . '-' . $m[1];
+                    } elseif (preg_match('/^(\d{4})$/', $dtOcup, $m)) {
+                      $mesAnoOcup = $m[1] . '-01';
+                    }
+                  @endphp
+                  <input type="month" id="campo-data-conhecimento-ocupacao" name="data_conhecimento_ocupacao" value="{{ $mesAnoOcup }}" />
 
                   <label for="obs-ocupado">Observações:</label>
                   <textarea id="obs-ocupado" name="obs_ocupado" placeholder="Informar dados do ocupante e indicar se a ocupação é parcial ou integral.">{{ $dados['obs_ocupado'] ?? '' }}</textarea>
@@ -495,7 +564,10 @@
                 <!-- Uso imobiliário atual -->
                 <div class="form-group editavel">
                   <label for="campo32">Uso imobiliário atual:</label>
-                  <select id="campo32" name="tipo_uso_atual" data-selected="{{ $dados['tipo_uso_atual'] ?? '' }}">
+                  <select id="campo32" name="tipo_uso_atual" data-selected="{{ $dados['tipo_uso_atual'] ?? '' }}"
+                          hx-get="/api/vocacoes?selected={{ $dados['tipo_uso_especifico_atual'] ?? '' }}" 
+                          hx-target="#campo33" 
+                          hx-trigger="load, change">
                     <option value="">Selecione...</option>
                     <option value="0101" {{ (isset($dados['tipo_uso_atual']) && $dados['tipo_uso_atual'] == '0101') ? 'selected' : '' }}>01.01 Uso administrativo e representativo</option>
                     <option value="0102" {{ (isset($dados['tipo_uso_atual']) && $dados['tipo_uso_atual'] == '0102') ? 'selected' : '' }}>01.02 Uso para agropecuária, aquicultura, produção florestal e pesca</option>
@@ -509,7 +581,7 @@
                 <!-- Uso específico atual -->
                 <div class="form-group editavel">
                   <label for="campo33">Uso específico atual:</label>
-                  <select id="campo33" name="tipo_uso_especifico_atual" data-selected="{{ $dados['tipo_uso_especifico_atual'] ?? '' }}" disabled>
+                  <select id="campo33" name="tipo_uso_especifico_atual">
                     <option value="">Selecione primeiro o uso imobiliário atual...</option>
                   </select>
                 </div>
@@ -726,6 +798,43 @@
               <button type="button" class="btn btn-outline-success btn-sm mt-2" id="btnAdicionarDocAba2">+ Adicionar link/documento</button>
           </div>
       </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnAdicionarDocAba2 = document.getElementById('btnAdicionarDocAba2');
+        const documentosListAba2 = document.getElementById('documentos-list-aba2');
+        
+        if (btnAdicionarDocAba2 && documentosListAba2) {
+            btnAdicionarDocAba2.addEventListener('click', function() {
+                const docRow = document.createElement('div');
+                docRow.style.cssText = 'display: flex; gap: 10px; margin-top: 10px; align-items: center;';
+                docRow.innerHTML = `
+                    <input type="file" style="display:none;" onchange="this.nextElementSibling.value = this.files[0].name">
+                    <input type="text" name="documentos_aba2[]" placeholder="Cole o link ou clique para selecionar arquivo" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; cursor: pointer;" onclick="if(!this.value) this.previousElementSibling.click()">
+                    <button type="button" class="btn btn-outline-danger btn-sm" style="padding: 6px 10px;" onclick="this.parentElement.remove()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                `;
+                documentosListAba2.appendChild(docRow);
+            });
+
+            // Restaura documentos salvos no rascunho
+            (window.INLINE_DOCUMENTOS_ABA2 || []).forEach(function(val) {
+                if (!val) return;
+                const docRow = document.createElement('div');
+                docRow.style.cssText = 'display: flex; gap: 10px; margin-top: 10px; align-items: center;';
+                docRow.innerHTML = `
+                    <input type="file" style="display:none;">
+                    <input type="text" name="documentos_aba2[]" value="${val.replace(/"/g, '&quot;')}" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;">
+                    <button type="button" class="btn btn-outline-danger btn-sm" style="padding: 6px 10px;" onclick="this.parentElement.remove()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                `;
+                documentosListAba2.appendChild(docRow);
+            });
+        }
+    });
+</script>
 
 
 

@@ -44,7 +44,7 @@ if (funcStartIndex !== -1 && funcEndIndex !== -1) {
     div.innerHTML = \`
         <div class="accordion-header" style="background-color: #f1f5f9; padding: 12px 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-radius: 8px 8px 0 0; border-bottom: 1px solid #cbd5e1;" onclick="toggleAccordion(this)">
             <h4 style="margin: 0; color: #0f172a;">Imóvel Selecionado: RIP \${rip}</h4>
-            <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold; color: #64748b;">▼</span>
+            <span class="accordion-icon" style="font-size: 1.2em; font-weight: bold; color: #64748b;">▶</span>
         </div>
         <div class="accordion-content" style="display: none; padding: 16px;">
             <input type="hidden" name="imoveis[\${index}][rip]" value="\${rip}">

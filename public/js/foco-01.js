@@ -102,9 +102,11 @@ function inicializarFoco01() {
                 labelTitulo.textContent = 'Requerimento';
             }
             const tituloPagina = document.getElementById('titulo-pagina-requerimento');
+            /*
             if (tituloPagina) {
                 tituloPagina.textContent = data.tipo_requerimento || data.procedimento || 'Regularizar Utilização de Imóvel da União';
             }
+            */
             if (data.documentos_anexados) {
                 clearInterval(checkStateInterval);
                 if (!docsRendered) {
@@ -123,9 +125,11 @@ function inicializarFoco01() {
                 labelTitulo.textContent = 'Requerimento';
             }
             const tituloPagina = document.getElementById('titulo-pagina-requerimento');
+            /*
             if (tituloPagina) {
                 tituloPagina.textContent = data.tipo_requerimento || data.procedimento || 'Regularizar Utilização de Imóvel da União';
             }
+            */
             if (data && data.documentos_anexados && Array.isArray(data.documentos_anexados)) {
                 clearInterval(checkStateInterval);
                 if (!docsRendered) {
@@ -306,6 +310,17 @@ function inicializarFoco01() {
         
         if (!window.solicitacaoCriacaoRip) return;
 
+        const anexos = window.solicitacaoAnexos || [];
+        let anexosHtml = '';
+        if (anexos.length > 0) {
+            anexosHtml = anexos.map(a =>
+                `<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;padding:3px 8px;background:#fff;border-radius:4px;border:1px solid #f3f4f6;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    <a href="${a.base64}" target="_blank" download="${a.nome}" style="color:#1e3a5f;text-decoration:underline;cursor:pointer;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${a.nome}">${a.nome}</a>
+                </div>`
+            ).join('');
+        }
+
         const div = document.createElement('div');
         div.id = 'card-solicitacao-rip';
         div.style.cssText = "background-color: #fdf2f8; border: 1px solid #fbcfe8; padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between; align-items: flex-start; font-size: 14px; font-weight: 500; color: #9d174d; margin-top: 8px; flex-direction: column; gap: 6px; text-align: left;";
@@ -320,18 +335,23 @@ function inicializarFoco01() {
             <div style="font-size: 13px; color: #475569; background: #fff; padding: 6px 10px; border-radius: 4px; border: 1px solid #f3f4f6; width: 100%; box-sizing: border-box; word-break: break-all;">
                 ${window.solicitacaoCriacaoRip}
             </div>
+            ${anexosHtml ? `<div style="display:flex;flex-direction:column;gap:4px;width:100%;">${anexosHtml}</div>` : ''}
         `;
         const listRips = document.getElementById('listaRipsInseridos');
         if (listRips) listRips.appendChild(div);
 
         div.querySelector('#btnEditarSolicitacaoRip').addEventListener('click', () => {
             if (inputSolicitacao) inputSolicitacao.value = window.solicitacaoCriacaoRip;
+            renderAnexosSolicitacao();
             if (modalSolicitacao) modalSolicitacao.style.display = 'flex';
         });
 
         div.querySelector('#btnExcluirSolicitacaoRip').addEventListener('click', () => {
             window.solicitacaoCriacaoRip = "";
+            window.solicitacaoAnexos = [];
             div.remove();
+            atualizarHiddenSolicitacao();
+            atualizarVisibilidadeSecaoImovel();
             atualizarLayoutConceituacao();
         });
     }
@@ -357,46 +377,96 @@ function inicializarFoco01() {
                 return;
             }
             window.solicitacaoCriacaoRip = txt;
+            window.solicitacaoAnexos = coletarAnexosSolicitacao();
             renderSolicitacaoCriacaoRip();
+            atualizarHiddenSolicitacao();
+            atualizarVisibilidadeSecaoImovel();
             fecharModalSolicitacao();
             atualizarLayoutConceituacao();
         });
     }
 
+    // Anexos da Solicitação de Criação de RIP
+    window.solicitacaoAnexos = window.solicitacaoAnexos || [];
+
+    const btnAddAnexo = document.getElementById('btnAddAnexoSolicitacao');
+    const anexosContainer = document.getElementById('anexosSolicitacaoContainer');
+
+    function renderAnexosSolicitacao() {
+        if (!anexosContainer) return;
+        anexosContainer.innerHTML = '';
+        const anexos = window.solicitacaoAnexos || [];
+        anexos.forEach((anexo, idx) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display: flex; gap: 8px; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 4px; border: 1px solid #e2e8f0;';
+            row.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <a href="${anexo.base64}" target="_blank" download="${anexo.nome}" style="flex:1; font-size: 13px; color: #1e3a5f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: underline;" title="${anexo.nome}">${anexo.nome}</a>
+                <button type="button" style="background:none; border:none; cursor:pointer; color:#ef4444; font-size:16px; padding:0; line-height:1;" data-idx="${idx}" title="Remover anexo">&times;</button>
+            `;
+            row.querySelector('button').addEventListener('click', () => {
+                window.solicitacaoAnexos.splice(idx, 1);
+                renderAnexosSolicitacao();
+            });
+            anexosContainer.appendChild(row);
+        });
+    }
+
+    function coletarAnexosSolicitacao() {
+        return window.solicitacaoAnexos || [];
+    }
+
+    if (btnAddAnexo && anexosContainer) {
+        const fileInputHidden = document.createElement('input');
+        fileInputHidden.type = 'file';
+        fileInputHidden.style.display = 'none';
+        fileInputHidden.multiple = true;
+        anexosContainer.parentElement.appendChild(fileInputHidden);
+
+        btnAddAnexo.addEventListener('click', () => {
+            fileInputHidden.click();
+        });
+
+        fileInputHidden.addEventListener('change', () => {
+            const files = fileInputHidden.files;
+            if (!files || files.length === 0) return;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    window.solicitacaoAnexos.push({
+                        nome: file.name,
+                        tipo: file.type,
+                        base64: e.target.result
+                    });
+                    renderAnexosSolicitacao();
+                };
+                reader.readAsDataURL(file);
+            }
+            fileInputHidden.value = '';
+        });
+    }
+
+    // Restaura anexos ao abrir o modal
+    if (btnSolicitar && modalSolicitacao) {
+        btnSolicitar.addEventListener('click', () => {
+            renderAnexosSolicitacao();
+        });
+    }
+
+    function atualizarHiddenSolicitacao() {
+        const hidden = document.getElementById('hiddenSolicitacaoCriacaoRip');
+        if (hidden) hidden.value = window.solicitacaoCriacaoRip || '';
+    }
+
     function atualizarNumeroRequerimento() {
-        const campo11 = document.getElementById('campo11');
-        if (!campo11) return;
-        
-        const processId = localStorage.getItem('CURRENT_PROCESS_ID') || '';
-        let uf = '';
-        if (window.parent && window.parent.formDataState && window.parent.formDataState.uf) {
-            uf = window.parent.formDataState.uf;
-        } else if (processId) {
-            const match = processId.match(/^[A-Z]{2}/i);
-            if (match) {
-                uf = match[0].toUpperCase();
-            }
-        }
-        
-        if (!uf) uf = 'PR'; // fallback
-        
-        if (window.ripsPendentes && window.ripsPendentes.length > 0) {
-            const novoNumero = uf + window.ripsPendentes[0];
-            campo11.value = novoNumero;
-            
-            // Notifica o sync.js e o parent
-            campo11.dispatchEvent(new Event('change', { bubbles: true }));
-            if (window.parent && typeof window.parent.updateField === 'function') {
-                window.parent.updateField('campo11', novoNumero);
-            }
-        }
+        // Não sobrescreve o número do requerimento original
     }
 
     window.removerRipItem = function(rip) {
         window.ripsPendentes = window.ripsPendentes.filter(r => r !== rip);
         
         atualizarLayoutConceituacao();
-        atualizarNumeroRequerimento();
         atualizarVisibilidadeSecaoImovel();
         if (window.parent && typeof window.parent.updateField === 'function') {
             window.parent.updateField('rips', window.ripsPendentes);
@@ -413,14 +483,11 @@ function inicializarFoco01() {
     const listaCadastrosInseridos = document.getElementById('listaCadastrosInseridos');
 
     function atualizarVisibilidadeSecaoImovel() {
-        const containerDropdown = document.getElementById('container_conceituacao_dropdown');
-        const dropdownAberto = containerDropdown && containerDropdown.style.display !== 'none';
-        const temItens = (window.ripsPendentes && window.ripsPendentes.length > 0) ||
-                         (window.cadastrosPendentes && window.cadastrosPendentes.length > 0) ||
-                         (listaRipsInseridos && listaRipsInseridos.children.length > 0) ||
-                         (listaCadastrosInseridos && listaCadastrosInseridos.children.length > 0);
-        if (listaRipsInseridos) listaRipsInseridos.style.display = (temItens && window.ripsPendentes && window.ripsPendentes.length > 0) ? 'flex' : 'none';
-        if (listaCadastrosInseridos) listaCadastrosInseridos.style.display = (temItens && window.cadastrosPendentes && window.cadastrosPendentes.length > 0) ? 'flex' : 'none';
+        const temRips = window.ripsPendentes && window.ripsPendentes.length > 0;
+        const temCadastros = window.cadastrosPendentes && window.cadastrosPendentes.length > 0;
+        const temSolicitacao = !!window.solicitacaoCriacaoRip;
+        if (listaRipsInseridos) listaRipsInseridos.style.display = (temRips || temSolicitacao) ? 'flex' : 'none';
+        if (listaCadastrosInseridos) listaCadastrosInseridos.style.display = temCadastros ? 'flex' : 'none';
     }
 
     if (selectConceituacao) {
@@ -461,14 +528,23 @@ function inicializarFoco01() {
     if (btnCancelarRip) btnCancelarRip.addEventListener('click', fecharModalRip);
     if (inputNumeroRip) inputNumeroRip.addEventListener('input', limparErroRip);
     
-    function adicionarRipNaLista(rip) {
+    function adicionarRipNaLista(rip, cep = '', logradouro = '', municipio = '', uf = '') {
         if (!listaRipsInseridos) return;
         const div = document.createElement('div');
-        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: #166534;";
+        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: #166534; margin-bottom: 8px;";
+        
+        let addressText = '';
+        if (cep || logradouro) {
+            addressText = `<br><span style="font-weight: normal; color: #475569; font-size: 0.9em; display: block; margin-top: 4px;">📍 ${logradouro || ''} - ${municipio || ''}/${uf || ''} (CEP: ${cep || ''})</span>`;
+        }
+        
         div.innerHTML = `
-            <span>✅ RIP Cadastrado: <strong>${rip}</strong></span>
+            <div>
+                <span>✅ RIP Cadastrado: <strong>${rip}</strong></span>
+                ${addressText}
+            </div>
             <input type="hidden" name="rips[]" value="${rip}">
-            <span style="cursor: pointer; color: #ef4444;" onclick="this.parentElement.remove(); window.removerRipItem('${rip}');" title="Remover">&times;</span>
+            <span style="cursor: pointer; color: #ef4444; font-size: 20px; font-weight: bold;" onclick="this.parentElement.remove(); window.removerRipItem('${rip}');" title="Remover">&times;</span>
         `;
         listaRipsInseridos.appendChild(div);
         
@@ -481,7 +557,6 @@ function inicializarFoco01() {
         }
 
         atualizarLayoutConceituacao();
-        atualizarNumeroRequerimento();
         atualizarVisibilidadeSecaoImovel();
     }
 
@@ -520,7 +595,9 @@ function inicializarFoco01() {
                 const rip = inputNumeroRip ? inputNumeroRip.value.trim() : '';
                 console.log('[foco-01] RIP digitado:', JSON.stringify(rip));
                 if (rip === '') return;
-                const existe = await validarRipNoBanco(rip);
+                
+                const spuData = await window.fetchSPU(rip);
+                const existe = spuData && (spuData.numero_rip || spuData.cep);
                 console.log('[foco-01] RIP existe:', existe);
                 if (!existe) {
                     mostrarErroRip('RIP não encontrado na tabela_spu!');
@@ -528,7 +605,7 @@ function inicializarFoco01() {
                     return;
                 }
                 inputNumeroRip.style.borderColor = '';
-                adicionarRipNaLista(rip);
+                adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf);
                 fecharModalRip();
                 if (window.parent && typeof window.parent.updateField === 'function') {
                     window.parent.updateField('rips', window.ripsPendentes);
@@ -543,14 +620,16 @@ function inicializarFoco01() {
             limparErroRip();
             const rip = inputNumeroRip.value.trim();
             if (rip === '') return;
-            const existe = await validarRipNoBanco(rip);
+            
+            const spuData = await window.fetchSPU(rip);
+            const existe = spuData && (spuData.numero_rip || spuData.cep);
             if (!existe) {
                 mostrarErroRip('RIP não encontrado na tabela_spu!');
                 inputNumeroRip.style.borderColor = '#dc2626';
                 return;
             }
             inputNumeroRip.style.borderColor = '';
-            adicionarRipNaLista(rip);
+            adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf);
             inputNumeroRip.value = '';
             inputNumeroRip.focus();
             if (window.parent && typeof window.parent.updateField === 'function') {
@@ -652,26 +731,45 @@ function inicializarFoco01() {
             }
         }
 
-        let rips = (registro && registro.dados_json && registro.dados_json.rips) ? registro.dados_json.rips : [];
-        let cadastros = (registro && registro.dados_json && registro.dados_json.cadastros_minimos) ? registro.dados_json.cadastros_minimos : [];
+        // Dados inline do Laravel (draft) são a fonte primária
+        let rips = (window.INLINE_RIPS && window.INLINE_RIPS.length > 0) ? window.INLINE_RIPS : [];
+        let cadastros = (window.INLINE_CADASTROS && window.INLINE_CADASTROS.length > 0) ? window.INLINE_CADASTROS : [];
 
-        // Fallback para dados inline vindos do Laravel (MySQL)
-        if (rips.length === 0 && window.INLINE_RIPS && window.INLINE_RIPS.length > 0) {
-            rips = window.INLINE_RIPS;
+        // Fallback para Supabase se não houver dados inline
+        if (rips.length === 0 && registro && registro.dados_json && registro.dados_json.rips) {
+            rips = registro.dados_json.rips;
         }
-        if (cadastros.length === 0 && window.INLINE_CADASTROS && window.INLINE_CADASTROS.length > 0) {
-            cadastros = window.INLINE_CADASTROS;
+        if (cadastros.length === 0 && registro && registro.dados_json && registro.dados_json.cadastros_minimos) {
+            cadastros = registro.dados_json.cadastros_minimos;
         }
 
-        if (rips.length > 0 || cadastros.length > 0 || (registro && registro.dados_json)) {
-            if (registro && registro.dados_json && registro.dados_json.solicitacao_criacao_rip) {
-                window.solicitacaoCriacaoRip = registro.dados_json.solicitacao_criacao_rip;
+        // Solicitação de RIP: prefere dados inline (Laravel draft), fallback Supabase
+        if (window.INLINE_SOLICITACAO_RIP) {
+            window.solicitacaoCriacaoRip = window.INLINE_SOLICITACAO_RIP;
+        } else if (registro && registro.dados_json && registro.dados_json.solicitacao_criacao_rip) {
+            window.solicitacaoCriacaoRip = registro.dados_json.solicitacao_criacao_rip;
+        }
+
+        if (window.INLINE_SOLICITACAO_ANEXOS && window.INLINE_SOLICITACAO_ANEXOS.length > 0) {
+            window.solicitacaoAnexos = window.INLINE_SOLICITACAO_ANEXOS;
+        }
+        atualizarHiddenSolicitacao();
+
+        if (rips.length > 0 || cadastros.length > 0 || window.solicitacaoCriacaoRip || (registro && registro.dados_json)) {
+            for (const rip of rips) {
+                try {
+                    const spuData = await window.fetchSPU(rip);
+                    adicionarRipNaLista(rip, spuData.cep || '', spuData.logradouro || '', spuData.municipio || '', spuData.uf || '');
+                } catch (e) {
+                    console.warn('[foco-01] Erro ao buscar dados do RIP ' + rip + ', adicionando sem endereço:', e);
+                    adicionarRipNaLista(rip, '', '', '', '');
+                }
             }
-            rips.forEach(rip => adicionarRipNaLista(rip));
             cadastros.forEach(cad => adicionarCadastroNaLista(cad));
             if (window.solicitacaoCriacaoRip) {
                 renderSolicitacaoCriacaoRip();
             }
+            atualizarVisibilidadeSecaoImovel();
 
             // Restaura a conceituação do imóvel
             const selectCon = document.getElementById('conceituacao_imovel');
@@ -824,6 +922,10 @@ function inicializarFoco01() {
             }
         }
         return false;
+    }
+
+    if (typeof window._saveDraft !== 'function') {
+        window._saveDraft = executarSalvamento;
     }
 
     const btnSalvarRelatorio = document.getElementById('btnSalvarRelatorio');
