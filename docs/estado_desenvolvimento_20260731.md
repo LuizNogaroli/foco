@@ -40,3 +40,8 @@
    - Ajuste em `start.sh` para condicionar a execução de seeders a `$SEED_DATABASE = true`, protegendo bases populadas contra truncamentos acidentais.
    - Ajuste em `render.yaml` definindo a topologia do web service `foco-18-app` e eliminando dependência do banco local do Render.
    - Deploy concluído com sucesso e aplicação **Live** em produção conectada de forma estável através do Connection Pooler IPv4 do Supabase (`port 6543`).
+
+6. **Correção de Chaves Primárias Não-Incrementais em PostgreSQL:**
+   - **Problema:** Ao tentar tramitar ou salvar a Aba 1, ocorria o erro `500 Undefined column: 7 ERROR: column "id" does not exist` nas tabelas `foco_aba1`, `foco_aba2` e `foco_aba3`. Isso ocorria porque o PostgreSQL exige declaração explícita de chave primária não-incremental quando a mesma não se chama `id`.
+   - **Solução:** Adicionado `protected $primaryKey = 'foco_id'` e `public $incrementing = false` nos modelos [FocoAba1](file:///C:/dev/Foco-18/app/Models/FocoAba1.php), [FocoAba2](file:///C:/dev/Foco-18/app/Models/FocoAba2.php) e [FocoAba3](file:///C:/dev/Foco-18/app/Models/FocoAba3.php).
+
