@@ -5,8 +5,8 @@
 // =========================================================================
 // ATENééO: COLE SUAS CHAVES DO SUPABASE ABAIXO
 // =========================================================================
-const SUPABASE_URL = "https://rzdmnzuweyzhilfcungl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZG1uenV3ZXl6aGlsZmN1bmdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTk5NTcsImV4cCI6MjA5NzQzNTk1N30.IqRxw3n2c-zNCccbgOUfh7wLy8eNnOVKJzwa8AsoSnU";
+const SUPABASE_URL = "https://btmpxettyjbtkfkcfmmu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_8CptvwcLfgz6MgDEN4aF-A_R74bLBt1";
 
 window.SUPABASE_URL = SUPABASE_URL;
 window.SUPABASE_ANON_KEY = SUPABASE_ANON_KEY;

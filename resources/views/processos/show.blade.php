@@ -17,8 +17,8 @@
         }
     </style>
     <script>
-        window.SUPABASE_URL = "https://rzdmnzuweyzhilfcungl.supabase.co";
-        window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZG1uenV3ZXl6aGlsZmN1bmdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTk5NTcsImV4cCI6MjA5NzQzNTk1N30.IqRxw3n2c-zNCccbgOUfh7wLy8eNnOVKJzwa8AsoSnU";
+        window.SUPABASE_URL = "https://btmpxettyjbtkfkcfmmu.supabase.co";
+        window.SUPABASE_ANON_KEY = "sb_publishable_8CptvwcLfgz6MgDEN4aF-A_R74bLBt1";
         window.CURRENT_PROCESS_ID = "{{ $processo->numero_requerimento }}";
         localStorage.setItem('CURRENT_PROCESS_ID', '{{ $processo->numero_requerimento }}');
         window.LARAVEL_DADOS = @json($dados ?? []);
