@@ -45,3 +45,17 @@
    - **Problema:** Ao tentar tramitar ou salvar a Aba 1, ocorria o erro `500 Undefined column: 7 ERROR: column "id" does not exist` nas tabelas `foco_aba1`, `foco_aba2` e `foco_aba3`. Isso ocorria porque o PostgreSQL exige declaração explícita de chave primária não-incremental quando a mesma não se chama `id`.
    - **Solução:** Adicionado `protected $primaryKey = 'foco_id'` e `public $incrementing = false` nos modelos [FocoAba1](file:///C:/dev/Foco-18/app/Models/FocoAba1.php), [FocoAba2](file:///C:/dev/Foco-18/app/Models/FocoAba2.php) e [FocoAba3](file:///C:/dev/Foco-18/app/Models/FocoAba3.php).
 
+7. **Redirecionamento Seguro HTMX (HX-Redirect):**
+   - **Problema:** O botão "Salvar e Enviar" das Abas 2 e 3 quebrava o visual renderizando o painel inteiro de processos dentro da aba por conta de um redirecionamento `302` comum.
+   - **Solução:** Implementado interceptador no final do método `tramitar` de [ProcessoController](file:///C:/dev/Foco-18/app/Http/Controllers/ProcessoController.php) que verifica a presença do cabeçalho `HX-Request` e retorna um cabeçalho `HX-Redirect` com status 200 para forçar o HTMX a realizar um redirecionamento limpo da página inteira no navegador.
+
+8. **Atualização das Credenciais do Supabase no Frontend:**
+   - **Problema:** O frontend buscava e salvava rascunhos apontando para a URL do projeto do Supabase antigo (`rzdmnzuweyzhilfcungl`), gerando falhas na tela de busca de RIPs.
+   - **Solução:** Atualizada a URL e a Anon Key nos arquivos [public/js/db.js](file:///C:/dev/Foco-18/public/js/db.js), [public/js/seed_tabela_spu.js](file:///C:/dev/Foco-18/public/js/seed_tabela_spu.js), [resources/views/processos/show.blade.php](file:///C:/dev/Foco-18/resources/views/processos/show.blade.php), [aba1b.blade.php](file:///C:/dev/Foco-18/resources/views/processos/abas/resumos/aba1b.blade.php) e [aba3.blade.php](file:///C:/dev/Foco-18/resources/views/processos/abas/aba3.blade.php).
+
+9. **Migração de Dados e Criação de Tabelas:**
+   - **Ação:** Criação das tabelas do frontend direto no Supabase (`tabela_spu`, `tabela_foco`, `tabela_requerimentos`, `tabela_status_fluxo`, `foco_reports` e `foco_drafts`) com RLS desabilitado para o funcionamento das chamadas do cliente JS.
+   - **Migração:** Criação e execução do script [database/migrate_sqlite_to_supabase.php](file:///C:/dev/Foco-18/database/migrate_sqlite_to_supabase.php) que conectou ao SQLite local e ao Supabase PostgreSQL, limpando e transferindo com sucesso todos os dados locais e resetando as sequências de ID.
+   - **Seeding:** Execução do script `seed_tabela_spu.js` para popular a tabela do SPU no banco de dados novo da nuvem.
+
+
