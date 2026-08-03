@@ -394,9 +394,25 @@
                     return;
                   }
     
-                  for (const rip of rips) {
+                  for (const raw of rips) {
+                    const ripObj = typeof raw === 'string' ? { numero_rip: raw } : (raw || {});
+                    const rip = ripObj.numero_rip;
+                    const destT = ripObj.destinacao_terreno || '';
+                    const areaT = ripObj.area_terreno_parcial || '';
+                    const destI = ripObj.destinacao_imovel || '';
+                    const areaI = ripObj.area_imovel_parcial || '';
                     let dadosSPU = {};
                     try { if (typeof window.fetchSPU === 'function') dadosSPU = await window.fetchSPU(rip); } catch(e) {}
+                    function destLine(p, dest, area) {
+                      if (!dest) return '';
+                      let compl = '';
+                      if (dest === 'Parcial' && area) compl = ' — <strong>Metragem:</strong> ' + area + ' m²';
+                      return `<div style="margin-bottom:6px;"><span style="font-weight:600;color:#1e293b;">${p}</span><br><span style="color:#166534;">${dest}</span>${compl}</div>`;
+                    }
+                    const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
+                      ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
+                      ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                    </div>` : '';
                     const block = document.createElement('div');
                     block.className = 'accordion-item';
                 block.style.cssText = 'border:none;margin-bottom:8px;';
@@ -422,7 +438,9 @@
                       ${buildField('Valor da Avaliação (R$)', dadosSPU.valor_avaliado || dadosSPU.valor_avaliacao)}
                       ${buildField('Data da Avaliação', dadosSPU.data_avaliacao)}
                       ${buildField('Instrumento de Avaliação', dadosSPU.instrumento_avaliacao)}
-                    </div></div>`;
+                    </div>
+                    ${destBox}
+                    </div>`;
                     container.appendChild(block);
                   }
     
@@ -430,9 +448,52 @@
                     const block = document.createElement('div');
                     block.className = 'accordion-item';
                 block.style.cssText = 'border:none;margin-bottom:8px;';
-                    block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)"><span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span><span class="accordion-icon">▶</span></div>
-                    <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">${buildField('CEP',cad.cep)}${buildField('Área (m²)',cad.area)}${buildField('Logradouro',cad.logradouro||cad.endereco)}${buildField('Município/UF',(cad.municipio||'')+' / '+(cad.uf||''))}</div></div>`;
+                    const destT = cad.destinacao_terreno || '';
+                    const areaT = cad.area_terreno_parcial || '';
+                    const destI = cad.destinacao_imovel || '';
+                    const areaI = cad.area_imovel_parcial || '';
+                    function destLine(p, dest, area) {
+                      if (!dest) return '';
+                      let compl = '';
+                      if (dest === 'Parcial' && area) compl = ' — <strong>Metragem:</strong> ' + area + ' m²';
+                      return `<div style="margin-bottom:6px;"><span style="font-weight:600;color:#1e293b;">${p}</span><br><span style="color:#166534;">${dest}</span>${compl}</div>`;
+                    }
+                    const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
+                      ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
+                      ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                    </div>` : '';
+                    const lat = cad.latitude || '';
+                    const lng = cad.longitude || '';
+                    function cadField(l, v) {
+                      return `<div><div style="font-weight:600;color:#334155;font-size:0.78rem;margin-bottom:2px;">${l}</div><div style="padding:4px 10px;background:#f1f5f9;border-radius:3px;">${v || '-'}</div></div>`;
+                    }
+                    function cadFieldFull(l, v) {
+                      return `<div style="grid-column:1 / -1;"><div style="font-weight:600;color:#334155;font-size:0.78rem;margin-bottom:2px;">${l}</div><div style="padding:4px 10px;background:#f1f5f9;border-radius:3px;">${v || '-'}</div></div>`;
+                    }
+                    const mapaHtml = (lat && lng) ? `<div style="width:320px;flex-shrink:0;min-height:260px;"><div id="mapa-cad-a3-${idx}" data-leaflet-map style="width:100%;height:100%;min-height:260px;border:1px solid #cbd5e1;border-radius:6px;"></div></div>` : '';
+                    block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
+                        <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:row;gap:15px;align-items:stretch;">
+                      <div style="flex:1;min-width:0;"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:0.9rem;">
+                        ${cadField('CEP', cad.cep)}
+                        ${cadField('Logradouro', cad.logradouro || cad.endereco)}
+                        ${cadField('Número', cad.numero)}
+                        ${cadField('Complemento', cad.complemento)}
+                        ${cadField('Município / UF', (cad.municipio || '') + ' / ' + (cad.uf || ''))}
+                        ${cadField('Área (m²)', cad.area || cad.area_m2)}
+                        ${cadField('Localização', (lat && lng) ? (lat + ', ' + lng) : (cad.modo_localizacao || '-'))}
+                        ${cad.observacoes ? cadFieldFull('Observações', cad.observacoes) : ''}
+                      </div>
+                      ${destBox}
+                      </div>
+                      ${mapaHtml}
+                    </div></div>`;
                     container.appendChild(block);
+                    if (lat && lng && typeof initMapCadastro === 'function') {
+                      initMapCadastro('mapa-cad-a3-' + idx, lat, lng);
+                    }
                   });
                 });
                 </script>
@@ -454,6 +515,20 @@
                       let d = {};
                       try { if (typeof window.fetchSPU === 'function') d = await window.fetchSPU('{{ $rip->numero_rip }}'); } catch(e) {}
                       function f(l,v){return `<div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">${l}:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">${v||'-'}</span></div>`;}
+                      const destT = '{{ $rip->destinacao_terreno }}';
+                      const areaT = '{{ $rip->area_terreno_parcial }}';
+                      const destI = '{{ $rip->destinacao_imovel }}';
+                      const areaI = '{{ $rip->area_imovel_parcial }}';
+                      function destLine(pergunta, dest, area) {
+                        if (!dest) return '';
+                        let compl = '';
+                        if (dest === 'Parcial' && area) compl = ' — <strong>Metragem:</strong> ' + area + ' m²';
+                        return `<div style="margin-bottom:6px;"><span style="font-weight:600;color:#1e293b;">${pergunta}</span><br><span style="color:#166534;">${dest}</span>${compl}</div>`;
+                      }
+                      const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
+                        ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
+                        ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                      </div>` : '';
                       el.innerHTML = `<div style="display:flex;flex-direction:column;">
                           ${f('Conceituação do Imóvel', d.conceituacao)}
                           ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
@@ -475,22 +550,70 @@
                         ${f('Valor da Avaliação (R$)', d.valor_avaliado || d.valor_avaliacao)}
                         ${f('Data da Avaliação', d.data_avaliacao)}
                         ${f('Instrumento de Avaliação', d.instrumento_avaliacao)}
-                      </div>`;
+                      </div>
+                      ${destBox}`;
                     });
                   </script>
                   @endforeach
                   @foreach($focoCadastros as $idx => $cad)
+                  @php
+                      $cadLat = $cad->latitude ?? '';
+                      $cadLng = $cad->longitude ?? '';
+                  @endphp
                   <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                     <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                       <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #{{ $idx+1 }} (Sem RIP)</span><span class="accordion-icon">▶</span>
                     </div>
                     <div style="padding:16px;display:none;background:#fff;">
-                      <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">CEP:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->cep ?? '-' }}</span></div>
-                      <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Logradouro:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->logradouro ?? '-' }}</span></div>
-                      <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Área (m²):</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->area ?? '-' }}</span></div>
-                      <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">Município/UF:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->municipio ?? '-' }} / {{ $cad->uf ?? '-' }}</span></div>
+                      <div style="display:flex;flex-direction:row;gap:15px;align-items:stretch;">
+                        <div style="flex:1;min-width:0;">
+                          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:0.9rem;">
+                            @php
+                                $cadFields = [
+                                    'CEP' => $cad->cep ?? '-',
+                                    'Logradouro' => $cad->logradouro ?? '-',
+                                    'Número' => $cad->numero ?? '-',
+                                    'Complemento' => $cad->complemento ?? '-',
+                                    'Município / UF' => ($cad->municipio ?? '-') . ' / ' . ($cad->uf ?? '-'),
+                                    'Área (m²)' => $cad->area ?? $cad->area_m2 ?? '-',
+                                    'Localização' => $cadLat && $cadLng ? ($cadLat . ', ' . $cadLng) : ($cad->modo_localizacao ?? '-'),
+                                ];
+                            @endphp
+                            @foreach($cadFields as $label => $value)
+                            <div>
+                              <div style="font-weight:600;color:#334155;font-size:0.78rem;margin-bottom:2px;">{{ $label }}</div>
+                              <div style="padding:4px 10px;background:#f1f5f9;border-radius:3px;">{{ $value }}</div>
+                            </div>
+                            @endforeach
+                            @if($cad->observacoes)
+                            <div style="grid-column:1 / -1;">
+                              <div style="font-weight:600;color:#334155;font-size:0.78rem;margin-bottom:2px;">Observações</div>
+                              <div style="padding:4px 10px;background:#f1f5f9;border-radius:3px;">{{ $cad->observacoes }}</div>
+                            </div>
+                            @endif
+                          </div>
+                          @if($cad->destinacao_terreno || $cad->destinacao_imovel)
+                          <div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
+                            <div style="margin-bottom:6px;"><span style="font-weight:600;color:#1e293b;">Qual a área do terreno a ser destinada?</span><br><span style="color:#166534;">{{ $cad->destinacao_terreno ?? '-' }}</span>@if($cad->destinacao_terreno === 'Parcial' && $cad->area_terreno_parcial) — <strong>Metragem:</strong> {{ $cad->area_terreno_parcial }} m² @endif</div>
+                            <div><span style="font-weight:600;color:#1e293b;">Qual a área do imóvel a ser destinada?</span><br><span style="color:#166534;">{{ $cad->destinacao_imovel ?? '-' }}</span>@if($cad->destinacao_imovel === 'Parcial' && $cad->area_imovel_parcial) — <strong>Metragem:</strong> {{ $cad->area_imovel_parcial }} m² @endif</div>
+                          </div>
+                          @endif
+                        </div>
+                        @if($cadLat && $cadLng)
+                        <div style="width:320px;flex-shrink:0;min-height:260px;">
+                          <div id="mapa-cad-mysql-a3-{{ $loop->index }}" data-leaflet-map style="width:100%;height:100%;min-height:260px;border:1px solid #cbd5e1;border-radius:6px;"></div>
+                        </div>
+                        @endif
+                      </div>
                     </div>
                   </div>
+                  <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                      if ({{ $cadLat && $cadLng ? 'true' : 'false' }} && typeof initMapCadastro === 'function') {
+                        initMapCadastro('mapa-cad-mysql-a3-{{ $loop->index }}', '{{ $cadLat }}', '{{ $cadLng }}');
+                      }
+                    });
+                  </script>
                   @endforeach
                 </div>
               @endif
@@ -538,89 +661,6 @@
   @endphp
   <fieldset @if(!$canEditAba3) disabled @endif>
 
-        @if($processo->tramitacao !== 'Devolvido')
-        <!-- ========== ACCORDION DEVOLUÇÃO ========== -->
-        <style>
-          .accordion-container-dev { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
-          .accordion-item-dev { border: 1px solid #fda4af; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-          .accordion-header-dev { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em; background: #fff1f2; color: #be123c; border-left: 5px solid #e11d48; transition: filter 0.2s; }
-          .accordion-header-dev:hover { filter: brightness(0.95); }
-          .accordion-body-dev { display: none; padding: 20px; border-top: 1px solid #fda4af; }
-          .accordion-body-dev.active-dev { display: block; background: #fff1f2; }
-          .accordion-icon-dev { font-size: 1.2em; color: #be123c !important; transition: transform 0.3s; }
-          .active-dev .accordion-icon-dev { transform: rotate(90deg); }
-        </style>
-        <div class="accordion-container-dev">
-          <div class="accordion-item-dev">
-            <div class="accordion-header-dev" onclick="this.nextElementSibling.classList.toggle('active-dev'); this.classList.toggle('active-dev');">
-              <span>⚠️ Devolver Processo</span>
-              <span class="accordion-icon-dev">▶</span>
-
-            </div>
-            <div class="accordion-body-dev editavel">
-              <label for="motivo_devolucao_rapida" style="color: #9f1239; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px;">Motivo (Obrigatório):</label>
-              <textarea id="motivo_devolucao_rapida" name="motivo_devolucao" placeholder="Justifique a devolução..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #fecdd3; border-radius: 4px; margin-bottom: 15px; font-family: inherit; box-sizing: border-box;"></textarea>
-
-              <p style="margin-top: 0; margin-bottom: 10px; color: #9f1239; font-weight: bold;">Para qual fase o processo deve retornar?</p>
-              <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-                <button type="button" 
-                        onclick="enviarDevolucao(1)"
-                        class="btnEnviarDevolucaoRapida" 
-                        style="flex: 1; min-width: 200px; background-color: #be123c; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(190, 18, 60, 0.2);">
-                    🔙 Indicação do Imóvel
-                </button>
-                <button type="button" 
-                        onclick="enviarDevolucao(2)"
-                        class="btnEnviarDevolucaoRapida" 
-                        style="flex: 1; min-width: 200px; background-color: #9f1239; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(159, 18, 57, 0.2);">
-                    🔙 Diagnóstico Preliminar
-                </button>
-              </div>
-            </div>
-            
-            <script>
-            function enviarDevolucao(aba) {
-                const motivo = document.getElementById('motivo_devolucao_rapida').value;
-                if(!motivo.trim()) {
-                    alert("O motivo da devolução é obrigatório. Por favor, justifique antes de enviar.");
-                    return;
-                }
-                
-                const botoes = document.querySelectorAll('.btnEnviarDevolucaoRapida');
-                botoes.forEach(b => { b.disabled = true; b.style.opacity = '0.7'; b.innerHTML = '⏳ Devolvendo...'; });
-
-                fetch("{{ route('processos.devolver', $processo->id) }}", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
-                        "Accept": "application/json",
-                        "HX-Request": "true"
-                    },
-                    body: JSON.stringify({
-                        aba: aba,
-                        motivo_devolucao: motivo
-                    })
-                }).then(res => {
-                    if(res.ok && res.headers.has('HX-Redirect')) {
-                        window.location.href = res.headers.get('HX-Redirect');
-                    } else if(res.redirected) {
-                        window.location.href = res.url;
-                    } else {
-                        window.location.href = "{{ route('processos.index') }}";
-                    }
-                }).catch(err => {
-                    console.error("Erro na devolução:", err);
-                    alert("Ocorreu um erro ao devolver o processo.");
-                    botoes.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
-                });
-            }
-            </script>
-          </div>
-        </div>
-        @endif
-
-        
         <!-- ========================================================== -->
 
         <!-- Dados do Destinatário -->
@@ -2088,6 +2128,89 @@
             >{{ $dados['campo511_obs'] ?? '' }}</textarea>
           </div>
         </div>
+
+        @if($processo->tramitacao !== 'Devolvido')
+        <!-- ========== ACCORDION DEVOLUÇÃO ========== -->
+        <style>
+          .accordion-container-dev { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
+          .accordion-item-dev { border: 1px solid #fda4af; border-radius: 8px; overflow: hidden; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+          .accordion-header-dev { padding: 15px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.1em; background: #fff1f2; color: #be123c; border-left: 5px solid #e11d48; transition: filter 0.2s; }
+          .accordion-header-dev:hover { filter: brightness(0.95); }
+          .accordion-body-dev { display: none; padding: 20px; border-top: 1px solid #fda4af; }
+          .accordion-body-dev.active-dev { display: block; background: #fff1f2; }
+          .accordion-icon-dev { font-size: 1.2em; color: #be123c !important; transition: transform 0.3s; }
+          .active-dev .accordion-icon-dev { transform: rotate(90deg); }
+        </style>
+        <div class="accordion-container-dev">
+          <div class="accordion-item-dev">
+            <div class="accordion-header-dev" onclick="this.nextElementSibling.classList.toggle('active-dev'); this.classList.toggle('active-dev');">
+              <span>⚠️ Devolver Processo</span>
+              <span class="accordion-icon-dev">▶</span>
+
+            </div>
+            <div class="accordion-body-dev editavel">
+              <label for="motivo_devolucao_rapida" style="color: #9f1239; font-weight: bold; font-size: 0.9em; display: block; margin-bottom: 5px;">Motivo (Obrigatório):</label>
+              <textarea id="motivo_devolucao_rapida" name="motivo_devolucao" placeholder="Justifique a devolução..." style="width: 100%; min-height: 80px; padding: 8px; border: 1px solid #fecdd3; border-radius: 4px; margin-bottom: 15px; font-family: inherit; box-sizing: border-box;"></textarea>
+
+              <p style="margin-top: 0; margin-bottom: 10px; color: #9f1239; font-weight: bold;">Para qual fase o processo deve retornar?</p>
+              <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <button type="button" 
+                        onclick="enviarDevolucao(1)"
+                        class="btnEnviarDevolucaoRapida" 
+                        style="flex: 1; min-width: 200px; background-color: #be123c; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(190, 18, 60, 0.2);">
+                    🔙 Indicação do Imóvel
+                </button>
+                <button type="button" 
+                        onclick="enviarDevolucao(2)"
+                        class="btnEnviarDevolucaoRapida" 
+                        style="flex: 1; min-width: 200px; background-color: #9f1239; color: white; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.3s; box-shadow: 0 2px 4px rgba(159, 18, 57, 0.2);">
+                    🔙 Diagnóstico do Imóvel
+                </button>
+              </div>
+            </div>
+            
+            <script>
+            function enviarDevolucao(aba) {
+                const motivo = document.getElementById('motivo_devolucao_rapida').value;
+                if(!motivo.trim()) {
+                    alert("O motivo da devolução é obrigatório. Por favor, justifique antes de enviar.");
+                    return;
+                }
+                
+                const botoes = document.querySelectorAll('.btnEnviarDevolucaoRapida');
+                botoes.forEach(b => { b.disabled = true; b.style.opacity = '0.7'; b.innerHTML = '⏳ Devolvendo...'; });
+
+                fetch("{{ route('processos.devolver', $processo->id) }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                        "Accept": "application/json",
+                        "HX-Request": "true"
+                    },
+                    body: JSON.stringify({
+                        aba: aba,
+                        motivo_devolucao: motivo
+                    })
+                }).then(res => {
+                    if(res.ok && res.headers.has('HX-Redirect')) {
+                        window.location.href = res.headers.get('HX-Redirect');
+                    } else if(res.redirected) {
+                        window.location.href = res.url;
+                    } else {
+                        window.location.href = "{{ route('processos.index') }}";
+                    }
+                }).catch(err => {
+                    console.error("Erro na devolução:", err);
+                    alert("Ocorreu um erro ao devolver o processo.");
+                    botoes.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+                });
+            }
+            </script>
+          </div>
+        </div>
+        @endif
+
         <!-- btnConfirmarAprovacao removido pois submissão é via Salvar e Enviar -->
 
         <!-- Botão Salvar e Enviar -->

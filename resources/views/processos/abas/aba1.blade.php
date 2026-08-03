@@ -1,5 +1,5 @@
 <script>
-    window.INLINE_RIPS = @json($dados['rips'] ?? ($processo->foco && $processo->foco->rips ? $processo->foco->rips->pluck('numero_rip')->toArray() : []));
+    window.INLINE_RIPS = @json($dados['rips'] ?? ($processo->foco && $processo->foco->rips ? $processo->foco->rips->toArray() : []));
     window.INLINE_CADASTROS = @json($dados['cadastros_minimos'] ?? ($processo->foco && $processo->foco->cadastrosMinimos ? $processo->foco->cadastrosMinimos->toArray() : []));
     window.INLINE_SOLICITACAO_RIP = @json($dados['solicitacao_criacao_rip'] ?? ($processo->foco?->aba1?->solicitacao_criacao_rip ?? ''));
     window.INLINE_SOLICITACAO_ANEXOS = @json($dados['solicitacao_anexos'] ?? []);
@@ -201,43 +201,88 @@
                     <span class="accordion-icon">▶</span>
                 </div>
                 <div class="accordion-body collapsed" style="padding: 15px; display: none;">
-                    <!-- Botão Adicionar Imóvel/Área -->
-                    <div style="display: flex; justify-content: center; margin: 15px 0;" class="editavel">
-                        <button type="button" id="btnAdicionarImovelArea" class="btn-action btn-inst btn-inst-primary">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Adicionar Imóvel/Área
-                        </button>
-                    </div>
+                    <!-- Estilos para botões com menu hover -->
+                    <style>
+                        .dropdown-hover {
+                            position: relative;
+                            display: inline-block;
+                            padding-bottom: 5px; /* ponte invisível */
+                        }
+                        .dropdown-hover-content {
+                            display: none;
+                            position: absolute;
+                            background-color: white;
+                            min-width: 280px;
+                            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+                            z-index: 9999;
+                            border-radius: 8px;
+                            overflow: hidden;
+                            border: 1px solid #cbd5e1;
+                            top: 100%;
+                            left: 50%;
+                            transform: translateX(-50%);
+                        }
+                        .dropdown-hover:hover .dropdown-hover-content {
+                            display: block;
+                        }
+                        .dropdown-hover-label {
+                            padding: 10px 16px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            color: #64748b;
+                            background-color: #f8fafc;
+                            border-bottom: 1px solid #cbd5e1;
+                            text-align: center;
+                        }
+                        .dropdown-hover-content button {
+                            width: 100%;
+                            text-align: left;
+                            background: none;
+                            border: none;
+                            padding: 12px 16px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            color: #334155;
+                            border-bottom: 1px solid #f1f5f9;
+                            transition: all 0.2s;
+                        }
+                        .dropdown-hover-content button:hover {
+                            background-color: #e2e8f0;
+                            color: #0f172a;
+                            font-weight: 500;
+                        }
+                        .dropdown-hover-content button:last-child {
+                            border-bottom: none;
+                        }
+                    </style>
 
-                    <!-- Conceituação do Imóvel (flat, sem wrapper) -->
-                    <div id="container_conceituacao_dropdown" style="display: {{ !empty($dados['conceituacao_imovel']) ? 'block' : 'none' }}; width: 100%; max-width: 450px; text-align: left; margin-bottom: 15px;">
-                        <label for="conceituacao_imovel" style="font-weight: 600; color: #1e3a5f; margin-bottom: 6px; font-size: 15px; display: block;">Selecione a conceituação do imóvel:</label>
-                        <select id="conceituacao_imovel" name="conceituacao_imovel" class="form-control" style="width: 100%; padding: 8px 12px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 15px; color: #334155; background-color: #ffffff;">
-                            <option value="">Selecione uma opção...</option>
-                            <option value="Terreno/acrescido de marinha">Terreno/acrescido de marinha</option>
-                            <option value="Terreno/acrescido marginal">Terreno/acrescido marginal</option>
-                            <option value="Nacional interior">Nacional interior</option>
-                            <option value="Espelho d'água">Espelho d'água</option>
-                            <option value="Cavidades naturais subterrâneas">Cavidades naturais subterrâneas</option>
-                            <option value="Manguezal">Manguezal</option>
-                            <option value="Praias">Praias</option>
-                        </select>
-                    </div>
-
-                    <div id="bloco-info-exige-cadastro-minimo" style="display: none; margin-bottom: 15px;">
-                        <button type="button" id="btnInserirCadastroMinimo" class="btn-action btn-inst btn-inst-primary" style="padding: 8px 16px; font-size: 0.9rem;">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Inserir Cadastro Mínimo
-                        </button>
-                    </div>
-
-                    <div id="bloco-info-exige-rip" style="display: none; margin-bottom: 15px;">
-                        <div style="display: flex; gap: 10px; justify-content: center;">
-                            <button type="button" id="btnInserirRip" class="btn-action btn-inst btn-inst-primary" style="padding: 8px 16px; font-size: 0.9rem;" onclick="event.stopPropagation();var m=document.getElementById('modalInserirRip');if(m){m.style.display='flex';}var i=document.getElementById('inputNumeroRip');if(i){i.value='';}">
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                                Inserir RIP existente
+                    <!-- Botões Adicionar Imóvel/Área -->
+                    <div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0; padding-bottom: 220px;" class="editavel">
+                        <div class="dropdown-hover">
+                            <button type="button" class="btn-action btn-inst btn-inst-primary">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Adicionar Imóvel/Área com RIP
                             </button>
-                            <button type="button" id="btnSolicitarCriacaoRip" class="btn-action btn-inst btn-inst-outline" style="padding: 8px 16px; font-size: 0.9rem;">Solicitar a criação de RIP</button>
+                            <div class="dropdown-hover-content">
+                                <div class="dropdown-hover-label">Selecione a conceituação do imóvel:</div>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido de marinha', 'com_rip')">Terreno/acrescido de marinha</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido marginal', 'com_rip')">Terreno/acrescido marginal</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Nacional interior', 'com_rip')">Nacional interior</button>
+                            </div>
+                        </div>
+
+                        <div class="dropdown-hover">
+                            <button type="button" class="btn-action btn-inst btn-inst-outline">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Adicionar Imóvel/Área sem RIP
+                            </button>
+                            <div class="dropdown-hover-content">
+                                <div class="dropdown-hover-label">Selecione a conceituação do imóvel:</div>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Espelho d\'água', 'sem_rip')">Espelho d'água</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Cavidades naturais subterrâneas', 'sem_rip')">Cavidades naturais subterrâneas</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Manguezal', 'sem_rip')">Manguezal</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Praias', 'sem_rip')">Praias</button>
+                            </div>
                         </div>
                     </div>
 
@@ -287,57 +332,144 @@
 
 <!-- Modal Inserir RIP -->
     <div id="modalInserirRip" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center;">
-        <div style="background:white; padding:30px; border-radius:12px; max-width:400px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.3); position:relative; border-top: 8px solid #1e3a5f;">
+        <div style="background:white; padding:30px; border-radius:12px; max-width:600px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.3); position:relative; border-top: 8px solid #1e3a5f;">
             <button id="btnFecharModalRip" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
             <h2 style="margin-top:0; color:#1e3a5f; font-size:20px; text-align: left; margin-bottom: 20px;">Inserir RIP</h2>
             
             <div style="margin-bottom: 20px; text-align: left;">
                 <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e3a5f;">Número do RIP:</label>
-                <input type="text" id="inputNumeroRip" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;" placeholder="Digite o RIP...">
-                <span id="errRipNaoEncontrado" style="display:none; color:#dc2626; font-size:0.85em; margin-top:5px; font-weight:600;">RIP não encontrado na tabela_spu!</span>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="inputNumeroRip" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;" placeholder="Digite o RIP...">
+                    <button type="button" id="btnPesquisarRip" class="btn-inst btn-inst-primary" style="padding: 10px 20px; font-size: 0.9rem;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Pesquisar
+                    </button>
+                </div>
+                <span id="errRipNaoEncontrado" style="display:none; color:#dc2626; font-size:0.85em; margin-top:5px; font-weight:600; display: block; margin-top: 5px;"></span>
+            </div>
+
+            <!-- Dados do RIP pesquisado -->
+            <div id="dadosRipPesquisado" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: #334155; text-align: left;">
+                <h3 style="margin-top: 0; color: #1e3a5f; font-size: 16px; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Dados do Imóvel</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span id="ripEndereco">-</span></div>
+                    <div><strong>Bairro:</strong> <span id="ripBairro">-</span></div>
+                    <div><strong>CEP:</strong> <span id="ripCep">-</span></div>
+                    <div><strong>Município:</strong> <span id="ripMunicipio">-</span></div>
+                    <div><strong>UF:</strong> <span id="ripUf">-</span></div>
+                </div>
+            </div>
+
+            <!-- Dados de Destinação de Área (RIP) -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h4 style="margin-top: 0; color: #1e3a5f; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Destinação de Área</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do terreno a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno_rip" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno_rip" value="Parcial"> Parcial</label>
+                        
+                        <div id="containerAreaTerrenoParcialRip" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaTerrenoRip" placeholder="Ex: 500" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do imóvel a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip" value="Parcial"> Parcial</label>
+                        
+                        <div id="containerAreaImovelParcialRip" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaImovelRip" placeholder="Ex: 150" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div style="display: flex; justify-content: space-between; gap: 10px;">
                 <button type="button" id="btnCancelarRip" class="btn-inst btn-inst-outline" style="flex: 1;">Cancelar</button>
-                <button type="button" id="btnMaisRip" class="btn-inst btn-inst-outline" style="flex: 1;">Mais</button>
+                <button type="button" id="btnMaisRip" class="btn-inst btn-inst-outline" style="flex: 1.5; font-size: 0.85rem; padding: 10px 5px;">Inserir + 1 RIP</button>
                 <button type="button" id="btnSalvarRip" class="btn-inst btn-inst-primary" style="flex: 1;">Inserir</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal Cadastro Mínimo -->
+    <!-- Modal Imóvel/Área sem RIP (Antigo Cadastro Mínimo) -->
     <div id="modalCadastroMinimo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:3000; align-items:center; justify-content:center;">
-        <div style="background:white; padding: 20px 30px; border-radius: 8px; max-width: 750px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position:relative; overflow-y: auto; max-height: 90vh; border-top: 8px solid #1e3a5f;">
+        <div style="background:white; padding: 20px 30px; border-radius: 8px; max-width: 800px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position:relative; overflow-y: auto; max-height: 90vh; border-top: 8px solid #1e3a5f;">
             <button id="btnFecharModalCadastroMinimo" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
-            <h2 style="margin-top:0; color:#1e3a5f; font-size:22px; text-align: left; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;">Cadastro Mínimo para Áreas sem RIP</h2>
+            <h2 style="margin-top:0; color:#1e3a5f; font-size:22px; text-align: left; padding-bottom: 15px; border-bottom: 1px solid #e2e8f0; margin-bottom: 20px;">Imóvel/Área sem RIP</h2>
             
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 15px;">
-                <!-- CEP -->
-                <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">CEP <span style="color:red;">*</span>:</label>
-                    <input type="text" id="modalCep" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="00000-000">
+            <!-- Localização do Imóvel/Área -->
+            <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #1e293b; font-size: 15px;">Localize o Imóvel/Área:</label>
+                <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                    <label style="cursor: pointer;"><input type="radio" name="modo_localizacao" value="CEP" id="radioModoCep" checked> CEP</label>
+                    <label style="cursor: pointer;"><input type="radio" name="modo_localizacao" value="Coordenadas" id="radioModoCoord"> Coordenadas</label>
                 </div>
-                <!-- Logradouro -->
-                <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Logradouro:</label>
-                    <input type="text" id="modalLogradouro" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="Preenchimento automático">
+                
+                <!-- Container CEP -->
+                <div id="blocoEntradaCep" style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; font-size: 13px; color: #475569; margin-bottom: 5px;">CEP:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="modalCep" style="width: 100%; max-width: 200px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white;" placeholder="00000-000">
+                        <button type="button" id="btnLocalizarCep" style="padding: 8px 15px; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">Localizar no Mapa</button>
+                    </div>
+                </div>
+
+                <!-- Container Coordenadas -->
+                <div id="blocoEntradaCoord" style="display: none; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; max-width: 400px;">
+                    <div>
+                        <label style="display: block; font-weight: bold; font-size: 13px; color: #475569; margin-bottom: 5px;">Latitude:</label>
+                        <input type="text" id="modalLatitude" placeholder="Ex: -15.7938" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-weight: bold; font-size: 13px; color: #475569; margin-bottom: 5px;">Longitude:</label>
+                        <input type="text" id="modalLongitude" placeholder="Ex: -47.8827" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;">
+                    </div>
+                    <div style="grid-column: 1 / -1;">
+                        <button type="button" id="btnLocalizarCoord" style="padding: 8px 15px; background: #1e3a5f; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; width: 100%;">Localizar no Mapa</button>
+                    </div>
+                </div>
+
+                <!-- Mapa -->
+                <div id="containerMapaGeo" style="display: block;">
+                    <div id="mapaCadastro" style="width: 100%; height: 250px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 10px; z-index: 1;"></div>
+                    <small style="color: #64748b; margin-top: 5px; display: block;" id="mapaHelpText">Digite o CEP para aproximar o mapa e, em seguida, clique no local exato do imóvel.</small>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <!-- Município -->
-                <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Município:</label>
-                    <input type="text" id="modalMunicipio" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="Preenchimento automático">
+            <!-- Dados de Endereço Complementares -->
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #1e3a5f; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Dados de Endereço Complementares</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 15px;">
+                    <!-- Logradouro -->
+                    <div style="text-align: left;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Logradouro:</label>
+                        <input type="text" id="modalLogradouro" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="Preenchimento automático">
+                    </div>
                 </div>
-                <!-- UF -->
-                <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">UF:</label>
-                    <input type="text" id="modalUf" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="UF">
-                </div>
-            </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 15px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <!-- Município -->
+                    <div style="text-align: left;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Município:</label>
+                        <input type="text" id="modalMunicipio" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="Preenchimento automático">
+                    </div>
+                    <!-- UF -->
+                    <div style="text-align: left;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">UF:</label>
+                        <input type="text" id="modalUf" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="UF">
+                    </div>
+                </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 15px; margin-bottom: 20px;">
                 <!-- Número -->
                 <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
                     <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Número:</label>
@@ -350,13 +482,38 @@
                 </div>
             </div>
 
-            <div style="margin-bottom: 15px;">
-                <!-- Área a ser destinada -->
-                <div style="background-color: #f8fafc; border-left: 4px solid #1e3a5f; padding: 10px 15px; border-radius: 4px; text-align: left;">
-                    <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #1e293b; font-size: 14px;">Área a ser destinada (m²) <span style="color:red;">*</span>:</label>
-                    <input type="text" id="modalArea" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none; background: white; margin-bottom: 0;" placeholder="Ex: 5000">
+            <!-- Dados de Destinação de Área -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #1e3a5f; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Destinação de Área</h4>
+                
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do terreno a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno" value="Parcial"> Parcial</label>
+                        
+                        <div id="containerAreaTerrenoParcial" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaTerreno" placeholder="Ex: 500" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do imóvel a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel" value="Parcial"> Parcial</label>
+                        
+                        <div id="containerAreaImovelParcial" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaImovel" placeholder="Ex: 150" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+
 
             <div style="margin-bottom: 25px;">
                 <!-- Observações -->

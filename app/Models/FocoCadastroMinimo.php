@@ -23,6 +23,13 @@ class FocoCadastroMinimo extends Model
         'uf',
         'area',
         'observacoes',
+        'latitude',
+        'longitude',
+        'modo_localizacao',
+        'destinacao_terreno',
+        'area_terreno_parcial',
+        'destinacao_imovel',
+        'area_imovel_parcial',
     ];
 
     public function foco()

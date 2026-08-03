@@ -215,76 +215,63 @@ function inicializarFoco01() {
     // 4. TOGGLE DOS BOTÕES DA CONCEITUAÇÃO DO IMÓVEL
     // =========================================================================
 
-    // Toggle para botões Inserir RIP / Inserir Cadastro Mínimo com base no Select
-    const containerDropdown = document.getElementById('container_conceituacao_dropdown');
-    const selectConceituacao = document.getElementById('conceituacao_imovel');
+    // Toggle para botões Inserir RIP / Inserir Cadastro Mínimo com base no Select (Removido, usando menus novos)
     const btnEnviar = document.getElementById('btnEnviar');
-    const btnInserirRip = document.getElementById('btnInserirRip');
-    const btnInserirCadastroMinimo = document.getElementById('btnInserirCadastroMinimo');
 
     // Estado da solicitação de criação de RIP
     window.solicitacaoCriacaoRip = "";
 
     function atualizarLayoutConceituacao() {
-        if (!selectConceituacao) return;
-        const val = selectConceituacao.value;
-        const exigeRip = ["Terreno/acrescido de marinha", "Terreno/acrescido marginal", "Nacional interior"];
-        const exigeCadastro = ["Espelho d'água", "Cavidades naturais subterrâneas", "Manguezal", "Praias"];
+        if (!btnEnviar) return;
+        
+        let habilitado = false;
+        if ((window.ripsPendentes && window.ripsPendentes.length > 0) || window.solicitacaoCriacaoRip) {
+            habilitado = true;
+        } else if (window.cadastrosPendentes && window.cadastrosPendentes.length > 0) {
+            habilitado = true;
+        }
 
-        const blocoInfo = document.getElementById('bloco-info-exige-rip');
-        const blocoCadastro = document.getElementById('bloco-info-exige-cadastro-minimo');
-        const containerDropdown = document.getElementById('container_conceituacao_dropdown');
-        const isDropdownVisible = containerDropdown && containerDropdown.style.display !== 'none';
-
-        let selecionado = "";
-        if (val && exigeRip.includes(val)) {
-            selecionado = "Sim";
-            if (blocoInfo) blocoInfo.style.display = isDropdownVisible ? "block" : "none";
-            if (blocoCadastro) blocoCadastro.style.display = "none";
-        } else if (val && exigeCadastro.includes(val)) {
-            selecionado = "Não";
-            if (blocoInfo) blocoInfo.style.display = "none";
-            if (blocoCadastro) blocoCadastro.style.display = isDropdownVisible ? "block" : "none";
+        if (habilitado) {
+            btnEnviar.disabled = false;
+            btnEnviar.style.opacity = "1";
+            btnEnviar.style.pointerEvents = "auto";
+            btnEnviar.style.cursor = "pointer";
         } else {
-            if (blocoInfo) blocoInfo.style.display = "none";
-            if (blocoCadastro) blocoCadastro.style.display = "none";
-        }
-
-        // Gerenciar estado ativo/inativo do botão Enviar com base em RIP (ou solicitação de criação) ou Cadastro Mínimo realizado
-        if (btnEnviar) {
-            let habilitado = false;
-            if (selecionado === "Sim" && ((window.ripsPendentes && window.ripsPendentes.length > 0) || window.solicitacaoCriacaoRip)) {
-                habilitado = true;
-            } else if (selecionado === "Não" && window.cadastrosPendentes && window.cadastrosPendentes.length > 0) {
-                habilitado = true;
-            }
-
-            if (habilitado) {
-                btnEnviar.disabled = false;
-                btnEnviar.style.opacity = "1";
-                btnEnviar.style.pointerEvents = "auto";
-                btnEnviar.style.cursor = "pointer";
-            } else {
-                btnEnviar.disabled = true;
-                btnEnviar.style.opacity = "0.4";
-                btnEnviar.style.pointerEvents = "none";
-                btnEnviar.style.cursor = "not-allowed";
-            }
+            btnEnviar.disabled = true;
+            btnEnviar.style.opacity = "0.4";
+            btnEnviar.style.pointerEvents = "none";
+            btnEnviar.style.cursor = "not-allowed";
         }
     }
 
-    // Toggle para o botão Adicionar Imóvel/Área
-    const btnAdicionarImovel = document.getElementById('btnAdicionarImovelArea');
-    if (btnAdicionarImovel) {
-        btnAdicionarImovel.addEventListener('click', () => {
-            const containerDropdown = document.getElementById('container_conceituacao_dropdown');
-            if (containerDropdown) {
-                const vaiAbrir = containerDropdown.style.display === 'none';
-                containerDropdown.style.display = vaiAbrir ? 'block' : 'none';
-                atualizarLayoutConceituacao();
+    // Lógica para seleção de conceituação através dos menus hover
+    window.conceituacaoSelecionada = "";
+    
+    window.selecionarConceituacaoBotao = function(valor, tipoBotao) {
+        window.conceituacaoSelecionada = valor;
+        
+        // Abre o respectivo modal diretamente
+        if (tipoBotao === 'com_rip') {
+            const modalRip = document.getElementById('modalInserirRip');
+            if (modalRip) modalRip.style.display = 'flex';
+            const inputRip = document.getElementById('inputNumeroRip');
+            if (inputRip) {
+                inputRip.value = '';
+                inputRip.focus();
             }
-        });
-    }
+        } else if (tipoBotao === 'sem_rip') {
+            const modalCadastro = document.getElementById('modalCadastroMinimo');
+            if (modalCadastro) {
+                modalCadastro.style.display = 'flex';
+                // Inicializa o mapa corretamente
+                setTimeout(() => {
+                    if (typeof initMap === 'function') initMap();
+                }, 100);
+            }
+        }
+        
+        atualizarLayoutConceituacao();
+    };
 
     // LÓGICA DO MODAL SOLICITAR CRIAÇÃO DE RIP
     console.log("🔍 [foco-01] Iniciando binding do modal de solicitação...");
@@ -464,7 +451,7 @@ function inicializarFoco01() {
     }
 
     window.removerRipItem = function(rip) {
-        window.ripsPendentes = window.ripsPendentes.filter(r => r !== rip);
+        window.ripsPendentes = window.ripsPendentes.filter(r => (typeof r === 'string' ? r : r.numero_rip) !== rip);
         
         atualizarLayoutConceituacao();
         atualizarVisibilidadeSecaoImovel();
@@ -481,6 +468,7 @@ function inicializarFoco01() {
 
     const listaRipsInseridos = document.getElementById('listaRipsInseridos');
     const listaCadastrosInseridos = document.getElementById('listaCadastrosInseridos');
+    const selectConceituacao = document.getElementById('selectConceituacao');
 
     function atualizarVisibilidadeSecaoImovel() {
         const temRips = window.ripsPendentes && window.ripsPendentes.length > 0;
@@ -510,7 +498,9 @@ function inicializarFoco01() {
     const btnCancelarRip = document.getElementById('btnCancelarRip');
     const btnSalvarRip = document.getElementById('btnSalvarRip');
     const btnMaisRip = document.getElementById('btnMaisRip');
+    const btnPesquisarRip = document.getElementById('btnPesquisarRip');
     const inputNumeroRip = document.getElementById('inputNumeroRip');
+    const btnInserirRip = document.getElementById('btnInserirRip');
     
     // Arrays para manter os dados pendentes de salvamento
     window.ripsPendentes = [];
@@ -523,34 +513,82 @@ function inicializarFoco01() {
         });
     }
 
-    const fecharModalRip = () => { if (modalRip) modalRip.style.display = 'none'; };
+    const fecharModalRip = () => { 
+        if (modalRip) modalRip.style.display = 'none'; 
+        const dadosBox = document.getElementById('dadosRipPesquisado');
+        if (dadosBox) dadosBox.style.display = 'none';
+    };
     if (btnFecharModalRip) btnFecharModalRip.addEventListener('click', fecharModalRip);
     if (btnCancelarRip) btnCancelarRip.addEventListener('click', fecharModalRip);
     if (inputNumeroRip) inputNumeroRip.addEventListener('input', limparErroRip);
     
-    function adicionarRipNaLista(rip, cep = '', logradouro = '', municipio = '', uf = '') {
+    function adicionarRipNaLista(ripInput, cep = '', logradouro = '', municipio = '', uf = '', destTerreno = 'Integral', areaTerreno = '', destImovel = 'Integral', areaImovel = '') {
         if (!listaRipsInseridos) return;
+
+        let rip, destT, areaT, destI, areaI;
+        if (typeof ripInput === 'object' && ripInput !== null) {
+            rip = ripInput.numero_rip;
+            cep = ripInput.cep || cep;
+            logradouro = ripInput.logradouro || logradouro;
+            municipio = ripInput.municipio || municipio;
+            uf = ripInput.uf || uf;
+            destT = ripInput.destinacao_terreno || 'Integral';
+            areaT = ripInput.area_terreno_parcial || '';
+            destI = ripInput.destinacao_imovel || 'Integral';
+            areaI = ripInput.area_imovel_parcial || '';
+        } else {
+            rip = ripInput;
+            destT = destTerreno;
+            areaT = areaTerreno;
+            destI = destImovel;
+            areaI = areaImovel;
+        }
+
         const div = document.createElement('div');
-        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: #166534; margin-bottom: 8px;";
+        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; color: #166534; margin-bottom: 8px;";
         
         let addressText = '';
         if (cep || logradouro) {
             addressText = `<br><span style="font-weight: normal; color: #475569; font-size: 0.9em; display: block; margin-top: 4px;">📍 ${logradouro || ''} - ${municipio || ''}/${uf || ''} (CEP: ${cep || ''})</span>`;
         }
+
+        const destinacaoTxt = (pergunta, dest, area) => {
+            const complemento = dest === 'Parcial' ? ` — <strong>Metragem:</strong> ${area} m²` : '';
+            return `<div style="margin-bottom: 5px;"><span style="font-weight: 600; color: #1e293b;">${pergunta}</span><br><span style="color: #166534;">${dest}</span>${complemento}</div>`;
+        };
+
+        const ripObj = {
+            numero_rip: rip,
+            cep: cep,
+            logradouro: logradouro,
+            municipio: municipio,
+            uf: uf,
+            destinacao_terreno: destT,
+            area_terreno_parcial: areaT,
+            destinacao_imovel: destI,
+            area_imovel_parcial: areaI
+        };
+        const dadosJsonStr = JSON.stringify(ripObj).replace(/"/g, '&quot;');
         
         div.innerHTML = `
-            <div>
-                <span>✅ RIP Cadastrado: <strong>${rip}</strong></span>
-                ${addressText}
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div style="flex: 1;">
+                    <span>✅ RIP Cadastrado: <strong>${rip}</strong></span>
+                    ${addressText}
+                </div>
+                <span style="cursor: pointer; color: #ef4444; font-size: 20px; font-weight: bold;" onclick="this.parentElement.parentElement.remove(); window.removerRipItem('${rip}');" title="Remover">&times;</span>
             </div>
-            <input type="hidden" name="rips[]" value="${rip}">
-            <span style="cursor: pointer; color: #ef4444; font-size: 20px; font-weight: bold;" onclick="this.parentElement.remove(); window.removerRipItem('${rip}');" title="Remover">&times;</span>
+            <div style="margin-top: 8px; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; font-weight: normal; color: #334155; font-size: 0.9em;">
+                ${destinacaoTxt('Qual a área do terreno a ser destinada?', destT, areaT)}
+                ${destinacaoTxt('Qual a área do imóvel a ser destinada?', destI, areaI)}
+            </div>
+            <input type="hidden" name="rips[]" value="${dadosJsonStr}">
         `;
         listaRipsInseridos.appendChild(div);
         
-        if (!window.ripsPendentes.includes(rip)) window.ripsPendentes.push(rip);
+        window.ripsPendentes = window.ripsPendentes.filter(r => (typeof r === 'string' ? r : r.numero_rip) !== rip);
+        window.ripsPendentes.push(ripObj);
 
-        // Oculta o dropdown de conceituação após inserção bem sucedida
         const containerDropdown = document.getElementById('container_conceituacao_dropdown');
         if (containerDropdown) {
             containerDropdown.style.display = 'none';
@@ -605,13 +643,65 @@ function inicializarFoco01() {
                     return;
                 }
                 inputNumeroRip.style.borderColor = '';
-                adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf);
+                
+                const destTerreno = document.querySelector('input[name="destinacao_terreno_rip"]:checked')?.value || 'Integral';
+                const areaTerreno = destTerreno === 'Parcial' ? (document.getElementById('modalAreaTerrenoRip')?.value || '') : '';
+                const destImovel = document.querySelector('input[name="destinacao_imovel_rip"]:checked')?.value || 'Integral';
+                const areaImovel = destImovel === 'Parcial' ? (document.getElementById('modalAreaImovelRip')?.value || '') : '';
+
+                adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf, destTerreno, areaTerreno, destImovel, areaImovel);
+                
+                // Reset inputs
+                document.querySelectorAll('input[name="destinacao_terreno_rip"]').forEach((r, idx) => r.checked = idx === 0);
+                document.querySelectorAll('input[name="destinacao_imovel_rip"]').forEach((r, idx) => r.checked = idx === 0);
+                if (document.getElementById('modalAreaTerrenoRip')) document.getElementById('modalAreaTerrenoRip').value = '';
+                if (document.getElementById('modalAreaImovelRip')) document.getElementById('modalAreaImovelRip').value = '';
+                if (document.getElementById('containerAreaTerrenoParcialRip')) document.getElementById('containerAreaTerrenoParcialRip').style.display = 'none';
+                if (document.getElementById('containerAreaImovelParcialRip')) document.getElementById('containerAreaImovelParcialRip').style.display = 'none';
+
                 fecharModalRip();
                 if (window.parent && typeof window.parent.updateField === 'function') {
                     window.parent.updateField('rips', window.ripsPendentes);
                 }
             } catch (err) {
                 console.error('[foco-01] ERRO ao salvar RIP:', err);
+            }
+        });
+    }
+
+    if (btnPesquisarRip) {
+        btnPesquisarRip.addEventListener('click', async () => {
+            limparErroRip();
+            const rip = inputNumeroRip ? inputNumeroRip.value.trim() : '';
+            if (rip === '') return;
+            
+            // UI feedback
+            const originalText = btnPesquisarRip.innerHTML;
+            btnPesquisarRip.innerHTML = 'Pesquisando...';
+            btnPesquisarRip.disabled = true;
+
+            const spuData = await window.fetchSPU(rip);
+            const existe = spuData && (spuData.numero_rip || spuData.cep);
+            
+            btnPesquisarRip.innerHTML = originalText;
+            btnPesquisarRip.disabled = false;
+
+            const dadosBox = document.getElementById('dadosRipPesquisado');
+            if (!existe) {
+                mostrarErroRip('RIP não encontrado na tabela_spu!');
+                inputNumeroRip.style.borderColor = '#dc2626';
+                if (dadosBox) dadosBox.style.display = 'none';
+                return;
+            }
+            
+            inputNumeroRip.style.borderColor = '#22c55e'; // Green highlight for success
+            if (dadosBox) {
+                dadosBox.style.display = 'block';
+                document.getElementById('ripEndereco').textContent = spuData.logradouro || '-';
+                document.getElementById('ripCep').textContent = spuData.cep || '-';
+                document.getElementById('ripBairro').textContent = spuData.bairro || '-';
+                document.getElementById('ripMunicipio').textContent = spuData.municipio || '-';
+                document.getElementById('ripUf').textContent = spuData.uf || '-';
             }
         });
     }
@@ -629,8 +719,27 @@ function inicializarFoco01() {
                 return;
             }
             inputNumeroRip.style.borderColor = '';
-            adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf);
+            
+            const destTerreno = document.querySelector('input[name="destinacao_terreno_rip"]:checked')?.value || 'Integral';
+            const areaTerreno = destTerreno === 'Parcial' ? (document.getElementById('modalAreaTerrenoRip')?.value || '') : '';
+            const destImovel = document.querySelector('input[name="destinacao_imovel_rip"]:checked')?.value || 'Integral';
+            const areaImovel = destImovel === 'Parcial' ? (document.getElementById('modalAreaImovelRip')?.value || '') : '';
+
+            adicionarRipNaLista(rip, spuData.cep, spuData.logradouro, spuData.municipio, spuData.uf, destTerreno, areaTerreno, destImovel, areaImovel);
+            
             inputNumeroRip.value = '';
+            inputNumeroRip.style.borderColor = '';
+            
+            // Reset inputs
+            document.querySelectorAll('input[name="destinacao_terreno_rip"]').forEach((r, idx) => r.checked = idx === 0);
+            document.querySelectorAll('input[name="destinacao_imovel_rip"]').forEach((r, idx) => r.checked = idx === 0);
+            if (document.getElementById('modalAreaTerrenoRip')) document.getElementById('modalAreaTerrenoRip').value = '';
+            if (document.getElementById('modalAreaImovelRip')) document.getElementById('modalAreaImovelRip').value = '';
+            if (document.getElementById('containerAreaTerrenoParcialRip')) document.getElementById('containerAreaTerrenoParcialRip').style.display = 'none';
+            if (document.getElementById('containerAreaImovelParcialRip')) document.getElementById('containerAreaImovelParcialRip').style.display = 'none';
+
+            const dadosBox = document.getElementById('dadosRipPesquisado');
+            if (dadosBox) dadosBox.style.display = 'none';
             inputNumeroRip.focus();
             if (window.parent && typeof window.parent.updateField === 'function') {
                 window.parent.updateField('rips', window.ripsPendentes);
@@ -652,9 +761,14 @@ function inicializarFoco01() {
     const modalNumero = document.getElementById('modalNumero');
     const modalArea = document.getElementById('modalArea');
 
+    const btnInserirCadastroMinimo = document.getElementById('btnInserirCadastroMinimo');
     if (btnInserirCadastroMinimo && modalCadastro) {
         btnInserirCadastroMinimo.addEventListener('click', () => {
             modalCadastro.style.display = 'flex';
+            // Initializes map correctly when modal becomes visible
+            setTimeout(() => {
+                if(typeof initMap === 'function') initMap();
+            }, 100);
         });
     }
 
@@ -665,55 +779,268 @@ function inicializarFoco01() {
     function adicionarCadastroNaLista(dados) {
         if (!listaCadastrosInseridos) return;
         const div = document.createElement('div');
-        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: #166534;";
+        div.style.cssText = "background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 16px; border-radius: 4px; font-size: 14px; font-weight: 500; color: #166534; margin-bottom: 8px;";
         
         const dadosJsonStr = JSON.stringify(dados).replace(/"/g, '&quot;');
+        let displayExtra = '';
+        if(dados.cep) displayExtra += `CEP: ${dados.cep}`;
+        else if (dados.latitude && dados.longitude) displayExtra += `Geo: ${dados.latitude}, ${dados.longitude}`;
+        else displayExtra += `Sem localização`;
+
+        const destT = dados.destinacao_terreno || 'Integral';
+        const areaT = dados.area_terreno_parcial || '';
+        const destI = dados.destinacao_imovel || 'Integral';
+        const areaI = dados.area_imovel_parcial || '';
+        const destinacaoTxt = (pergunta, dest, area) => {
+            const complemento = dest === 'Parcial' ? ` — <strong>Metragem:</strong> ${area} m²` : '';
+            return `<div style="margin-bottom: 5px;"><span style="font-weight: 600; color: #1e293b;">${pergunta}</span><br><span style="color: #166534;">${dest}</span>${complemento}</div>`;
+        };
+        const mapaId = `mapa-cad-aba1-${listaCadastrosInseridos.children.length}`;
+        const mapaHtml = (dados.latitude && dados.longitude) ? `<div id="${mapaId}" data-leaflet-map style="width:100%;height:200px;border:1px solid #bbf7d0;border-radius:6px;margin-top:8px;"></div>` : '';
+
+        let enderecoText = '';
+        if (dados.logradouro) {
+            enderecoText = `<br><span style="font-weight: normal; color: #475569; font-size: 0.9em; display: block; margin-top: 4px;">📍 ${dados.logradouro}${dados.numero ? ', ' + dados.numero : ''}${dados.complemento ? ' - ' + dados.complemento : ''} - ${dados.municipio || ''}/${dados.uf || ''}</span>`;
+        }
+
         div.innerHTML = `
-            <span>✅ Cadastro realizado <span style="font-size: 12px; color: #15803d; font-weight: normal; margin-left: 5px;">(CEP: ${dados.cep})</span></span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                <div style="flex: 1;">
+                    <span>✅ Cadastro realizado <span style="font-size: 12px; color: #15803d; font-weight: normal; margin-left: 5px;">(${displayExtra})</span></span>
+                    ${enderecoText}
+                </div>
+                <span style="cursor: pointer; color: #ef4444; font-size: 20px; font-weight: bold;" onclick="this.parentElement.parentElement.remove(); window.removerCadastroItem('${dados.cep || ''}', '${dados.area || ''}');" title="Remover">&times;</span>
+            </div>
+            <div style="margin-top: 8px; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; font-weight: normal; color: #334155; font-size: 0.9em;">
+                ${destinacaoTxt('Qual a área do terreno a ser destinada?', destT, areaT)}
+                ${destinacaoTxt('Qual a área do imóvel a ser destinada?', destI, areaI)}
+            </div>
+            ${mapaHtml}
             <input type="hidden" name="cadastros_minimos[]" value="${dadosJsonStr}">
-            <span style="cursor: pointer; color: #ef4444;" onclick="this.parentElement.remove(); window.removerCadastroItem('${dados.cep}', '${dados.area}');" title="Remover">&times;</span>
         `;
         listaCadastrosInseridos.appendChild(div);
-        
-        const exists = window.cadastrosPendentes.some(c => c.cep === dados.cep && c.area === dados.area);
-        if (!exists) window.cadastrosPendentes.push(dados);
-
-        // Oculta o dropdown de conceituação após inserção bem sucedida
-        const containerDropdown = document.getElementById('container_conceituacao_dropdown');
-        if (containerDropdown) {
-            containerDropdown.style.display = 'none';
+        if (dados.latitude && dados.longitude && typeof initMapCadastro === 'function') {
+            initMapCadastro(mapaId, dados.latitude, dados.longitude);
         }
+        
+        const exists = window.cadastrosPendentes.some(c => c.cep === dados.cep && c.area === dados.area && c.latitude === dados.latitude);
+        if (!exists) window.cadastrosPendentes.push(dados);
 
         atualizarLayoutConceituacao();
         atualizarVisibilidadeSecaoImovel();
     }
 
+    let map = null;
+    let marker = null;
+    function initMap() {
+        if (!map && document.getElementById('mapaCadastro')) {
+            map = L.map('mapaCadastro').setView([-15.7938, -47.8827], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+            map.on('click', function(e) {
+                if(marker) map.removeLayer(marker);
+                marker = L.marker(e.latlng).addTo(map);
+                document.getElementById('modalLatitude').value = e.latlng.lat.toFixed(6);
+                document.getElementById('modalLongitude').value = e.latlng.lng.toFixed(6);
+            });
+        }
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 200);
+        }
+    }
+
+    // Toggle layout between CEP and Coordenadas
+    const radiosModo = document.querySelectorAll('input[name="modo_localizacao"]');
+    const blocoCep = document.getElementById('blocoEntradaCep');
+    const blocoCoord = document.getElementById('blocoEntradaCoord');
+    const helpText = document.getElementById('mapaHelpText');
+    
+    radiosModo.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if(e.target.value === 'CEP') {
+                blocoCep.style.display = 'block';
+                blocoCoord.style.display = 'none';
+                if(helpText) helpText.textContent = "Digite o CEP para aproximar o mapa e, em seguida, clique no local exato do imóvel.";
+            } else {
+                blocoCep.style.display = 'none';
+                blocoCoord.style.display = 'grid';
+                if(helpText) helpText.textContent = "Digite as coordenadas ou clique diretamente no mapa para marcar o local exato do imóvel.";
+            }
+        });
+    });
+
+    // Handle map search via CEP Button
+    const btnLocalizarCep = document.getElementById('btnLocalizarCep');
+    if (btnLocalizarCep && modalCep) {
+        btnLocalizarCep.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const cepVal = modalCep.value.replace(/\D/g, '');
+            if(cepVal.length !== 8) {
+                alert('Digite um CEP válido (8 dígitos).');
+                return;
+            }
+            
+            if(!map) {
+                alert('O mapa não foi carregado corretamente. Tentando recarregar...');
+                if(typeof initMap === 'function') initMap();
+                return;
+            }
+
+            const originalText = btnLocalizarCep.innerHTML;
+            btnLocalizarCep.innerHTML = 'Buscando...';
+            btnLocalizarCep.disabled = true;
+            try {
+                // Passo 1: Busca o endereço exato no ViaCEP
+                const viacepRes = await fetch(`https://viacep.com.br/ws/${cepVal}/json/`);
+                const viacepData = await viacepRes.json();
+                
+                if (!viacepData.erro) {
+                    // Preenche os campos do formulário automaticamente
+                    if (document.getElementById('modalLogradouro')) document.getElementById('modalLogradouro').value = viacepData.logradouro || '';
+                    if (document.getElementById('modalMunicipio')) document.getElementById('modalMunicipio').value = viacepData.localidade || '';
+                    if (document.getElementById('modalUf')) document.getElementById('modalUf').value = viacepData.uf || '';
+                        
+                        // Passo 2: Busca as coordenadas no Nominatim usando o endereço completo
+                        const query = `${viacepData.logradouro ? viacepData.logradouro + ',' : ''} ${viacepData.localidade}, ${viacepData.uf}, Brazil`;
+                        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json`);
+                        const data = await res.json();
+                        
+                        if(data && data.length > 0) {
+                            const lat = data[0].lat;
+                            const lon = data[0].lon;
+                            map.setView([lat, lon], 16);
+                            if(marker) map.removeLayer(marker);
+                            marker = L.marker([lat, lon]).addTo(map);
+                            document.getElementById('modalLatitude').value = lat;
+                            document.getElementById('modalLongitude').value = lon;
+                        } else {
+                            // Tenta buscar apenas pela cidade se a rua falhar
+                            const queryCity = `${viacepData.localidade}, ${viacepData.uf}, Brazil`;
+                            const resCity = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(queryCity)}&format=json`);
+                            const dataCity = await resCity.json();
+                            if(dataCity && dataCity.length > 0) {
+                                const lat = dataCity[0].lat;
+                                const lon = dataCity[0].lon;
+                                map.setView([lat, lon], 12);
+                                if(marker) map.removeLayer(marker);
+                                marker = L.marker([lat, lon]).addTo(map);
+                                document.getElementById('modalLatitude').value = lat;
+                                document.getElementById('modalLongitude').value = lon;
+                                alert('O mapa foi centralizado na cidade, pois não achamos as coordenadas exatas da rua. Clique no local exato.');
+                            } else {
+                                alert('Endereço encontrado, mas não conseguimos localizar no mapa. Por favor, marque manualmente.');
+                            }
+                        }
+                    } else {
+                        alert('CEP não encontrado na base de dados (ViaCEP).');
+                    }
+                } catch(err) { 
+                    console.error('ViaCEP/Nominatim search failed', err); 
+                    alert('Erro ao buscar o CEP na internet.');
+                }
+                btnLocalizarCep.innerHTML = originalText;
+                btnLocalizarCep.disabled = false;
+        });
+    }
+
+    // Handle map search via Coordenadas Button
+    const btnLocalizarCoord = document.getElementById('btnLocalizarCoord');
+    if (btnLocalizarCoord) {
+        btnLocalizarCoord.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if(!map) {
+                alert('O mapa não foi carregado corretamente. Tentando recarregar...');
+                if(typeof initMap === 'function') initMap();
+                return;
+            }
+
+            const latInput = document.getElementById('modalLatitude');
+            const lngInput = document.getElementById('modalLongitude');
+            if(latInput && lngInput && latInput.value && lngInput.value) {
+                const lat = parseFloat(latInput.value);
+                const lng = parseFloat(lngInput.value);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    map.setView([lat, lng], 16);
+                    if(marker) map.removeLayer(marker);
+                    marker = L.marker([lat, lng]).addTo(map);
+                } else {
+                    alert('Coordenadas inválidas. Digite números válidos.');
+                }
+            } else {
+                alert('Preencha Latitude e Longitude.');
+            }
+        });
+    }
+
+    // Toggle destinação área
+    document.querySelectorAll('input[name="destinacao_terreno"]').forEach(r => {
+        r.addEventListener('change', e => document.getElementById('containerAreaTerrenoParcial').style.display = e.target.value === 'Parcial' ? 'flex' : 'none');
+    });
+    document.querySelectorAll('input[name="destinacao_imovel"]').forEach(r => {
+        r.addEventListener('change', e => document.getElementById('containerAreaImovelParcial').style.display = e.target.value === 'Parcial' ? 'flex' : 'none');
+    });
+    document.querySelectorAll('input[name="destinacao_terreno_rip"]').forEach(r => {
+        r.addEventListener('change', e => document.getElementById('containerAreaTerrenoParcialRip').style.display = e.target.value === 'Parcial' ? 'flex' : 'none');
+    });
+    document.querySelectorAll('input[name="destinacao_imovel_rip"]').forEach(r => {
+        r.addEventListener('change', e => document.getElementById('containerAreaImovelParcialRip').style.display = e.target.value === 'Parcial' ? 'flex' : 'none');
+    });
+
     if (btnSalvarCadastro) {
         btnSalvarCadastro.addEventListener('click', () => {
             const cep = modalCep ? modalCep.value.trim() : '';
-            const area = modalArea ? modalArea.value.trim() : '';
-            if (cep && area) {
-                const dados = {
-                    cep: cep,
-                    logradouro: modalLogradouro ? modalLogradouro.value.trim() : '',
-                    municipio: modalMunicipio ? modalMunicipio.value.trim() : '',
-                    uf: modalUf ? modalUf.value.trim() : '',
-                    numero: modalNumero ? modalNumero.value.trim() : '',
-                    area: area,
-                    observacoes: document.getElementById('modalObservacoes') ? document.getElementById('modalObservacoes').value.trim() : ''
-                };
-                
-                adicionarCadastroNaLista(dados);
-                fecharModalCadastro();
-                // Limpa form basico
-                if (modalCep) modalCep.value = '';
-                if (modalArea) modalArea.value = '';
-                if (modalLogradouro) modalLogradouro.value = '';
-                if (modalMunicipio) modalMunicipio.value = '';
-                if (modalUf) modalUf.value = '';
-                if (modalNumero) modalNumero.value = '';
-            } else {
-                alert('Preencha pelo menos o CEP e a Área a ser destinada.');
+            const modo = document.querySelector('input[name="modo_localizacao"]:checked')?.value || 'CEP';
+            const latitude = document.getElementById('modalLatitude')?.value.trim() || '';
+            const longitude = document.getElementById('modalLongitude')?.value.trim() || '';
+            
+            const destTerreno = document.querySelector('input[name="destinacao_terreno"]:checked')?.value || 'Integral';
+            const areaTerreno = destTerreno === 'Parcial' ? (document.getElementById('modalAreaTerreno')?.value || '') : '';
+            
+            const destImovel = document.querySelector('input[name="destinacao_imovel"]:checked')?.value || 'Integral';
+            const areaImovel = destImovel === 'Parcial' ? (document.getElementById('modalAreaImovel')?.value || '') : '';
+
+            const area = areaTerreno || areaImovel || '0';
+
+            const dados = {
+                cep: cep,
+                logradouro: modalLogradouro ? modalLogradouro.value : '',
+                municipio: modalMunicipio ? modalMunicipio.value : '',
+                uf: modalUf ? modalUf.value : '',
+                numero: modalNumero ? modalNumero.value : '',
+                complemento: typeof modalComplemento !== 'undefined' && modalComplemento ? modalComplemento.value : '',
+                area: area,
+                observacoes: document.getElementById('modalObservacoes') ? document.getElementById('modalObservacoes').value : '',
+                modo_localizacao: modo,
+                latitude: latitude,
+                longitude: longitude,
+                destinacao_terreno: destTerreno,
+                area_terreno_parcial: areaTerreno,
+                destinacao_imovel: destImovel,
+                area_imovel_parcial: areaImovel
+            };
+
+            adicionarCadastroNaLista(dados);
+            fecharModalCadastro();
+            
+            // Limpa form basico
+            if (modalCep) modalCep.value = '';
+            if (document.getElementById('modalAreaTerreno')) document.getElementById('modalAreaTerreno').value = '';
+            if (document.getElementById('modalAreaImovel')) document.getElementById('modalAreaImovel').value = '';
+            if (modalLogradouro) modalLogradouro.value = '';
+            if (modalMunicipio) modalMunicipio.value = '';
+            if (modalUf) modalUf.value = '';
+            if (modalNumero) modalNumero.value = '';
+            if (document.getElementById('modalLatitude')) document.getElementById('modalLatitude').value = '';
+            if (document.getElementById('modalLongitude')) document.getElementById('modalLongitude').value = '';
+            if (document.getElementById('modalAreaTerreno')) document.getElementById('modalAreaTerreno').value = '';
+            if (document.getElementById('modalAreaImovel')) document.getElementById('modalAreaImovel').value = '';
+            if (document.getElementById('modalObservacoes')) document.getElementById('modalObservacoes').value = '';
+
+            if (window.parent && typeof window.parent.updateField === 'function') {
+                window.parent.updateField('cadastros_minimos', window.cadastrosPendentes);
             }
         });
     }
@@ -756,13 +1083,22 @@ function inicializarFoco01() {
         atualizarHiddenSolicitacao();
 
         if (rips.length > 0 || cadastros.length > 0 || window.solicitacaoCriacaoRip || (registro && registro.dados_json)) {
-            for (const rip of rips) {
+            for (const ripData of rips) {
+                const ripObj = typeof ripData === 'string' ? { numero_rip: ripData } : ripData;
+                const rip = ripObj.numero_rip;
                 try {
                     const spuData = await window.fetchSPU(rip);
-                    adicionarRipNaLista(rip, spuData.cep || '', spuData.logradouro || '', spuData.municipio || '', spuData.uf || '');
+                    const fullRipObj = {
+                        ...ripObj,
+                        cep: ripObj.cep || spuData.cep || '',
+                        logradouro: ripObj.logradouro || spuData.logradouro || '',
+                        municipio: ripObj.municipio || spuData.municipio || '',
+                        uf: ripObj.uf || spuData.uf || ''
+                    };
+                    adicionarRipNaLista(fullRipObj);
                 } catch (e) {
                     console.warn('[foco-01] Erro ao buscar dados do RIP ' + rip + ', adicionando sem endereço:', e);
-                    adicionarRipNaLista(rip, '', '', '', '');
+                    adicionarRipNaLista(ripObj);
                 }
             }
             cadastros.forEach(cad => adicionarCadastroNaLista(cad));
@@ -1269,34 +1605,6 @@ function inicializarFoco01() {
                 value = value.replace(/^(\d{5})(\d)/, '$1-$2');
             }
             e.target.value = value.substring(0, 9);
-        });
-
-        modalCep.addEventListener('blur', function() {
-            const cepDigitado = this.value.replace(/\D/g, '');
-            if (cepDigitado.length === 8) {
-                modalLogradouro.value = 'Buscando...';
-                modalMunicipio.value = 'Buscando...';
-                modalUf.value = '...';
-
-                fetch(`https://viacep.com.br/ws/${cepDigitado}/json/`)
-                    .then(r => r.json())
-                    .then(data => {
-                        if (!data.erro) {
-                            modalLogradouro.value = data.logradouro || '';
-                            modalMunicipio.value = data.localidade || '';
-                            modalUf.value = data.uf || '';
-                        } else {
-                            modalLogradouro.value = '';
-                            modalMunicipio.value = '';
-                            modalUf.value = '';
-                        }
-                    })
-                    .catch(() => {
-                        modalLogradouro.value = '';
-                        modalMunicipio.value = '';
-                        modalUf.value = '';
-                    });
-            }
         });
     }
 

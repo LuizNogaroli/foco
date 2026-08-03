@@ -30,8 +30,10 @@ class ProcessoController extends Controller
             'Indicação do Imóvel' => ['aba' => 1, 'status' => null],
             'Indicação do imóvel' => ['aba' => 1, 'status' => null],
             
-            'Diagnóstico Preliminar' => ['aba' => 2, 'status' => null],
+            'Diagnóstico do Imóvel' => ['aba' => 2, 'status' => null],
             'Diagnóstico preliminar do imóvel' => ['aba' => 2, 'status' => null],
+            'Diagnóstico do Imóvel' => ['aba' => 2, 'status' => null],
+            'Diagnóstico do imóvel' => ['aba' => 2, 'status' => null],
             
             'Análise de Viabilidade' => ['aba' => 3, 'status' => null],
             'Análise de viabilidade' => ['aba' => 3, 'status' => null],
@@ -75,8 +77,10 @@ class ProcessoController extends Controller
             'Indicação do Imóvel' => ['Equipe Destinação'],
             'Indicação do imóvel' => ['Equipe Destinação'],
             
-            'Diagnóstico Preliminar' => ['Equipe Caracterização'],
+            'Diagnóstico do Imóvel' => ['Equipe Caracterização'],
             'Diagnóstico preliminar do imóvel' => ['Equipe Caracterização'],
+            'Diagnóstico do Imóvel' => ['Equipe Caracterização'],
+            'Diagnóstico do imóvel' => ['Equipe Caracterização'],
             
             'Análise de Viabilidade' => ['Equipe Destinação'],
             'Análise de viabilidade' => ['Equipe Destinação'],
@@ -225,7 +229,8 @@ class ProcessoController extends Controller
         $statuses = [
             'Aguardando Análise',
             'Indicação do Imóvel',
-            'Diagnóstico Preliminar',
+            'Diagnóstico do Imóvel',
+            'Diagnóstico do Imóvel',
             'Análise de Viabilidade',
             'Validação - Chefia',
             'Validação - Coordenação',
@@ -288,12 +293,21 @@ class ProcessoController extends Controller
         if ($foco) {
             if ($aba == 1 && $foco->aba1) {
                 $dados = $foco->aba1->toArray();
-                $dados['rips'] = $foco->rips->pluck('numero_rip')->toArray();
+                $dados['rips'] = $foco->rips->toArray();
                 $dados['cadastros_minimos'] = $foco->cadastrosMinimos->toArray();
             } elseif ($aba == 2 && $foco->aba2) {
                 $dados = $foco->aba2->toArray();
             } elseif ($aba == 3 && $foco->aba3) {
                 $dados = $foco->aba3->toArray();
+                $dadosAnalise = $dados['dados_analise'] ?? [];
+                $propostaDestinacao = $dados['proposta_destinacao'] ?? [];
+                unset($dados['dados_analise'], $dados['proposta_destinacao']);
+                if (is_array($dadosAnalise)) {
+                    $dados = array_merge($dados, $dadosAnalise);
+                }
+                if (is_array($propostaDestinacao)) {
+                    $dados = array_merge($dados, $propostaDestinacao);
+                }
             }
 
             // Disponibiliza a solicitação de criação de RIP da Aba 1 em todas as abas (exceto Aba 7, que carrega do tramite)
@@ -303,7 +317,9 @@ class ProcessoController extends Controller
         }
 
         // Fallback: buscar do tramite mais recente (legado)
-        if (empty($dados)) {
+        // Na Aba 3, o snapshot acumulado do trâmite guarda valores antigos de outras abas
+        // (ex.: campo16) e não deve popular o formulário quando a Aba 3 ainda não foi salva.
+        if (empty($dados) && !($aba == 3 && $foco && !$foco->aba3)) {
             $latestTramite = $processo->tramites()->latest()->first();
             $dados = $latestTramite ? $latestTramite->dados_snapshot : [];
         }
@@ -534,9 +550,24 @@ class ProcessoController extends Controller
                 );
                 if (isset($validatedData['rips'])) {
                     $foco->rips()->delete();
-                    foreach ((array) $validatedData['rips'] as $rip) {
-                        if (!empty($rip)) {
-                            $foco->rips()->create(['numero_rip' => $rip]);
+                    $rips = is_array($validatedData['rips'])
+                        ? $validatedData['rips']
+                        : json_decode($validatedData['rips'], true) ?? [];
+                    foreach ($rips as $ripRaw) {
+                        if (is_string($ripRaw)) {
+                            $decoded = json_decode($ripRaw, true);
+                            $ripData = is_array($decoded) ? $decoded : ['numero_rip' => $ripRaw];
+                        } else {
+                            $ripData = $ripRaw;
+                        }
+                        if (!empty($ripData) && isset($ripData['numero_rip'])) {
+                            $foco->rips()->create([
+                                'numero_rip' => $ripData['numero_rip'],
+                                'destinacao_terreno' => $ripData['destinacao_terreno'] ?? null,
+                                'area_terreno_parcial' => $ripData['area_terreno_parcial'] ?? null,
+                                'destinacao_imovel' => $ripData['destinacao_imovel'] ?? null,
+                                'area_imovel_parcial' => $ripData['area_imovel_parcial'] ?? null,
+                            ]);
                         }
                     }
                 }
@@ -559,11 +590,18 @@ class ProcessoController extends Controller
                                 'uf' => $cad['uf'] ?? null,
                                 'area' => $cad['area'] ?? null,
                                 'observacoes' => $cad['observacoes'] ?? null,
+                                'latitude' => $cad['latitude'] ?? null,
+                                'longitude' => $cad['longitude'] ?? null,
+                                'modo_localizacao' => $cad['modo_localizacao'] ?? null,
+                                'destinacao_terreno' => $cad['destinacao_terreno'] ?? null,
+                                'area_terreno_parcial' => $cad['area_terreno_parcial'] ?? null,
+                                'destinacao_imovel' => $cad['destinacao_imovel'] ?? null,
+                                'area_imovel_parcial' => $cad['area_imovel_parcial'] ?? null,
                             ]);
                         }
                     }
                 }
-                $processo->status_atual = 'Diagnóstico Preliminar';
+                $processo->status_atual = 'Diagnóstico do Imóvel';
 
             } elseif ($effectiveAba == '2') {
                 $foco->update(['aba_salva' => 2]);
@@ -814,7 +852,7 @@ class ProcessoController extends Controller
         if ($aba == 1) {
             $processo->status_atual = 'Indicação do Imóvel';
         } elseif ($aba == 2) {
-            $processo->status_atual = 'Diagnóstico Preliminar';
+            $processo->status_atual = 'Diagnóstico do Imóvel';
         }
         $processo->save();
         $this->syncProcessoStatusToSupabase($processo);
@@ -936,7 +974,8 @@ class ProcessoController extends Controller
             return [
                 'Aguardando Análise', 'Aguardando análise',
                 'Indicação do Imóvel', 'Indicação do imóvel',
-                'Diagnóstico Preliminar', 'Diagnóstico preliminar do imóvel',
+                'Diagnóstico do Imóvel', 'Diagnóstico preliminar do imóvel',
+                'Diagnóstico do Imóvel', 'Diagnóstico do imóvel',
                 'Análise de Viabilidade', 'Análise de viabilidade',
                 'Validação - Chefia', 'Validação análise de viabilidade - Chefia',
                 'Validação - Coordenação', 'Validação análise de viabilidade - Coordenação',
@@ -958,7 +997,8 @@ class ProcessoController extends Controller
                 'Análise de Viabilidade', 'Análise de viabilidade',
             ],
             'Equipe Caracterização' => [
-                'Diagnóstico Preliminar', 'Diagnóstico preliminar do imóvel',
+                'Diagnóstico do Imóvel', 'Diagnóstico preliminar do imóvel',
+                'Diagnóstico do Imóvel', 'Diagnóstico do imóvel',
             ],
             'Chefia' => [
                 'Validação - Chefia', 'Validação análise de viabilidade - Chefia',
@@ -1123,7 +1163,7 @@ class ProcessoController extends Controller
                 return '📋 Dados do Requerimento';
             }
             if (str_contains($acao, 'Aba 2') || str_contains($etapa, 'Aba 2')) {
-                return '📋 Diagnóstico Preliminar';
+                return '📋 Diagnóstico do Imóvel';
             }
             if (str_contains($acao, 'Aba 3') || str_contains($etapa, 'Aba 3')) {
                 return '📋 Análise de Viabilidade';
@@ -1371,7 +1411,7 @@ class ProcessoController extends Controller
 
         $rowDefs = [
             'aba1' => ['icon' => '📋', 'label' => 'Dados do Requerimento'],
-            'aba2' => ['icon' => '📋', 'label' => 'Diagnóstico Preliminar'],
+            'aba2' => ['icon' => '📋', 'label' => 'Diagnóstico do Imóvel'],
             'aba3' => ['icon' => '📋', 'label' => 'Análise de Viabilidade'],
             'chefia' => ['icon' => '🖊️', 'label' => 'Chefia'],
             'coordenacao' => ['icon' => '🖊️', 'label' => 'Coordenação'],

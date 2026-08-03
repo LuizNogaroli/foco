@@ -7,6 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/index.css') }}">
     <link rel="stylesheet" href="{{ asset('css/styles-forms.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     @vite(['resources/js/app.js'])
     <style>
         .active-tab {
@@ -33,7 +35,7 @@
 </head>
 <body style="background: #f1f5f9;">
 
-<main style="padding-top: 20px;">
+<main style="padding-top: 20px; position: static; height: auto;">
     @if(session('success'))
         <div id="toast-success" style="position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background-color: #dcfce7; color: #166534; padding: 16px 32px; border-radius: 8px; text-align: center; font-weight: bold; border: 1px solid #22c55e; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 9999; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; transition: opacity 0.5s ease;">
             <span style="font-size: 1.3rem;">✔</span> {{ session('success') }}
@@ -79,19 +81,23 @@
         @endif
 
         @if ($aba == 1)
-            @include('processos.abas.aba1', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            <div style="margin-top: 10px;">
+                @include('processos.abas.aba1', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            </div>
         @elseif ($aba == 2)
-            <div id="aba2-container">
+            <div id="aba2-container" style="margin-top: 10px;">
                 @include('processos.abas.aba2', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
             </div>
         @elseif ($aba == 3)
-            @include('processos.abas.aba3', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            <div style="margin-top: 10px;">
+                @include('processos.abas.aba3', ['processo' => $processo, 'dados' => $dados, 'requerimento' => $requerimento ?? null])
+            </div>
         @elseif ($aba == 7)
-            <div id="aba7-container">
+            <div id="aba7-container" style="margin-top: 10px;">
                 @include('processos.abas.aba7', ['processo' => $processo, 'dados' => $dados])
             </div>
         @else
-            <div style="text-align: center; padding: 50px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="text-align: center; padding: 50px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 10px;">
                 <h2 style="color: #64748b;">Em breve</h2>
                 <p>A aba {{ $aba }} ainda não foi migrada para o sistema.</p>
             </div>
@@ -124,7 +130,31 @@
                 }
                 header.classList.toggle('active', isCollapsed);
             });
+
+            if (isCollapsed && typeof refreshMapsIn === 'function') {
+                refreshMapsIn(content);
+            }
         }
+    }
+
+    function initMapCadastro(elId, lat, lng) {
+        const el = document.getElementById(elId);
+        if (!el || !lat || !lng || typeof L === 'undefined') return;
+        if (el.dataset.mapInit === '1') return;
+        const map = L.map(el).setView([parseFloat(lat), parseFloat(lng)], 17);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        L.marker([parseFloat(lat), parseFloat(lng)]).addTo(map);
+        window.__aba2Maps = window.__aba2Maps || {};
+        window.__aba2Maps[elId] = map;
+        el.dataset.mapInit = '1';
+    }
+
+    function refreshMapsIn(container) {
+        if (typeof L === 'undefined' || !window.__aba2Maps || !container) return;
+        container.querySelectorAll('[data-leaflet-map]').forEach((mEl) => {
+            const map = window.__aba2Maps[mEl.id];
+            if (map) setTimeout(() => map.invalidateSize(), 50);
+        });
     }
 </script>
 
