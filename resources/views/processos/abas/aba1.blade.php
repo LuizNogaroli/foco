@@ -257,7 +257,7 @@
                     </style>
 
                     <!-- Botões Adicionar Imóvel/Área -->
-                    <div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0; padding-bottom: 220px;" class="editavel">
+                    <div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0; padding-bottom: 350px;" class="editavel">
                         <div class="dropdown-hover">
                             <button type="button" class="btn-action btn-inst btn-inst-primary">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -268,6 +268,10 @@
                                 <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido de marinha', 'com_rip')">Terreno/acrescido de marinha</button>
                                 <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido marginal', 'com_rip')">Terreno/acrescido marginal</button>
                                 <button type="button" onclick="selecionarConceituacaoBotao('Nacional interior', 'com_rip')">Nacional interior</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Água Pública de Domínio da União', 'com_rip')">Água Pública de Domínio da União</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Cavidades naturais subterrâneas', 'com_rip')">Cavidades naturais subterrâneas</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Manguezal', 'com_rip')">Manguezal</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Praias', 'com_rip')">Praias</button>
                             </div>
                         </div>
 
@@ -278,7 +282,10 @@
                             </button>
                             <div class="dropdown-hover-content">
                                 <div class="dropdown-hover-label">Selecione a conceituação do imóvel:</div>
-                                <button type="button" onclick="selecionarConceituacaoBotao('Espelho d\'água', 'sem_rip')">Espelho d'água</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido de marinha', 'sem_rip')">Terreno/acrescido de marinha</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Terreno/acrescido marginal', 'sem_rip')">Terreno/acrescido marginal</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Nacional interior', 'sem_rip')">Nacional interior</button>
+                                <button type="button" onclick="selecionarConceituacaoBotao('Água Pública de Domínio da União', 'sem_rip')">Água Pública de Domínio da União</button>
                                 <button type="button" onclick="selecionarConceituacaoBotao('Cavidades naturais subterrâneas', 'sem_rip')">Cavidades naturais subterrâneas</button>
                                 <button type="button" onclick="selecionarConceituacaoBotao('Manguezal', 'sem_rip')">Manguezal</button>
                                 <button type="button" onclick="selecionarConceituacaoBotao('Praias', 'sem_rip')">Praias</button>
@@ -378,7 +385,7 @@
                 </div>
 
                 <div>
-                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do imóvel a ser destinada?</label>
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área construída a ser destinada?</label>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip" value="Integral" checked> Integral</label>
                         <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip" value="Parcial"> Parcial</label>
@@ -500,7 +507,7 @@
                 </div>
 
                 <div>
-                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do imóvel a ser destinada?</label>
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área construída a ser destinada?</label>
                     <div style="display: flex; gap: 20px; align-items: center;">
                         <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel" value="Integral" checked> Integral</label>
                         <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel" value="Parcial"> Parcial</label>

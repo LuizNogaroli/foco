@@ -69,9 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     handleRadioToggle('campo56_radio', 'group-campo56');
-    handleRadioToggle('campo57_radio', 'group-campo57');
     handleRadioToggle('campo58_radio', 'group-campo58');
-    handleRadioToggle('campo510_radio', 'group-campo510');
 
     // 4. SUBMIT E MODAL
     const modal = document.getElementById('modalEnvio');
@@ -126,6 +124,5 @@ document.addEventListener('DOMContentLoaded', function () {
     addSelectToggle('campo51', 'bloco51_obs');
     addSelectToggle('campo55', 'bloco55_obs');
     addSelectToggle('campo58', 'bloco58_obs');
-    addSelectToggle('campo510', 'bloco510_obs');
     addSelectToggle('campo511', 'bloco511_obs');
 });

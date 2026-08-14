@@ -580,7 +580,7 @@ function inicializarFoco01() {
             </div>
             <div style="margin-top: 8px; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; font-weight: normal; color: #334155; font-size: 0.9em;">
                 ${destinacaoTxt('Qual a área do terreno a ser destinada?', destT, areaT)}
-                ${destinacaoTxt('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                ${destinacaoTxt('Qual a área construída a ser destinada?', destI, areaI)}
             </div>
             <input type="hidden" name="rips[]" value="${dadosJsonStr}">
         `;
@@ -813,7 +813,7 @@ function inicializarFoco01() {
             </div>
             <div style="margin-top: 8px; padding: 10px 12px; background: #ffffff; border: 1px solid #bbf7d0; border-radius: 4px; font-weight: normal; color: #334155; font-size: 0.9em;">
                 ${destinacaoTxt('Qual a área do terreno a ser destinada?', destT, areaT)}
-                ${destinacaoTxt('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                ${destinacaoTxt('Qual a área construída a ser destinada?', destI, areaI)}
             </div>
             ${mapaHtml}
             <input type="hidden" name="cadastros_minimos[]" value="${dadosJsonStr}">
@@ -1137,7 +1137,7 @@ function inicializarFoco01() {
             const val = selectCon ? selectCon.value : '';
             
             const exigeRip = ["Terreno/acrescido de marinha", "Terreno/acrescido marginal", "Nacional interior"];
-            const exigeCadastro = ["Espelho d'água", "Cavidades naturais subterrâneas", "Manguezal", "Praias"];
+            const exigeCadastro = ["Água Pública de Domínio da União", "Cavidades naturais subterrâneas", "Manguezal", "Praias"];
             const possuiRipVal = exigeRip.includes(val) ? 'Sim' : (exigeCadastro.includes(val) ? 'Não' : '');
             
             const cbRipsAtivos = exigeRip.includes(val) ? [val] : [];

@@ -74,8 +74,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     block.innerHTML = `<div style="background:#e2e8f0;color:#1e293b;padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:bold;font-size:0.95em;" onclick="const b=this.nextElementSibling;const i=this.querySelector('span:last-child');if(b.style.display==='none'){b.style.display='block';i.style.transform='rotate(90deg)';}else{b.style.display='none';i.style.transform='rotate(0deg)';}"><span>🏠 Imóvel (RIP): ${rip}</span><span style="transition:transform 0.2s;">▶</span></div>
     <div style="padding:16px;display:none;background:#fff;"><div style="display:flex;flex-direction:column;">
       ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-      ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
       ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+      ${buildField('Natureza do Imóvel', dadosSPU.natureza || dadosSPU.natureza_terreno)}
+      ${buildField('Classificação do Imóvel', dadosSPU.classificacao)}
+      ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Urbano') ? buildField('Inscrição Municipal', dadosSPU.inscricao_municipal) : ''}
+      ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Rural') ? buildField('CCIR', dadosSPU.ccir) : ''}
       ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
       ${buildField('CEP', dadosSPU.cep)}
       ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
@@ -132,8 +135,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       function f(l,v){return `<div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;"><span style="width:240px;font-weight:600;color:#334155;">${l}:</span><span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">${v||'-'}</span></div>`;}
       if (el) el.innerHTML = `<div>
         ${f('Conceituação do Imóvel', d.conceituacao)}
-        ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
         ${f('Tipo de Imóvel', d.tipo_imovel)}
+        ${f('Natureza do Imóvel', d.natureza || d.natureza_terreno)}
+        ${f('Classificação do Imóvel', d.classificacao)}
+        ${(String(d.natureza || d.natureza_terreno).trim() === 'Urbano') ? f('Inscrição Municipal', d.inscricao_municipal) : ''}
+        ${(String(d.natureza || d.natureza_terreno).trim() === 'Rural') ? f('CCIR', d.ccir) : ''}
         ${f('Condição de Urbanização', d.condicao_urbanizacao)}
         ${f('CEP', d.cep)}
         ${f('Logradouro', d.logradouro || d.endereco)}

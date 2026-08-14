@@ -1,0 +1,40 @@
+# Pendências — 06/08/2026
+
+## Feito nesta sessão
+
+- **Aba 7 — Box Equipe C.G.:** nova seção "Manifestação" (`aba7.blade.php:463-520`) com `decl_equipe_cg_opcao` (favoravel / favoravel_condicionantes / nao_favoravel), campo condicionantes (`obs_equipe_cg_condicionantes`, visível só em "com condicionantes") e conclusão (`decl_equipe_cg_conclusao`: apta_cde / inapta_cde). Substituiu `parecer_conformidade` / `obs_conclusao`.
+- **IDs canônicos dos boxes:** `id="box-{{ $chave }}"` em `aba7.blade.php:228` (substituiu IDs duplicados). Restore point: `docs/backups/aba7.blade.php.bak-20260806_1647`.
+- **Documentação:** criados `AGENTS.md`, `kb/kb_resumo_tecnico_projeto_20260806_1647.md`, `kb/kb_boxes_manifestacao_aba7_20260806_1647.md`.
+- **Limpeza de protótipos:** movidos 87 scripts pontuais da raiz para `archive/prototipos/raiz/` (git mv, histórico preservado). `prototipo_html/` (abas 4-10 e antigos) permanece intacto e já é ignorado pelo git. `public/js` órfãos ainda no lugar (decisão adiada).
+- **Aba 7 — Refatoração dos boxes em partials:** cada perfil agora tem view própria em `resources/views/processos/abas/manifestacoes/` (`chefia`, `coordenacao`, `superintendencia`, `cde`, `equipe_cg`, `coordenacao_geral`, `direcao`); o partial genérico `padrao` foi **removido** a pedido do usuário (cada perfil tem box particular com regras próprias). `aba7.blade.php:284` usa `@include('processos.abas.manifestacoes.' . $chave)`.
+- **Carimbo de manifestação no histórico:** criado partial único `resources/views/processos/abas/partials/carimbo_manifestacao.blade.php`, usado pela timeline (`historico.blade.php`) e pelos 6 modelos de histórico (B-G). Exibe os novos valores (favoravel/favoravel_condicionantes/nao_favoravel, condicionantes, conclusão apta/inapta) e mantém compatibilidade com os antigos (`suficiente`/`insuficiente`, `obs_*`). O carimbo persiste porque cada manifestação gera um trâmite com `dados_snapshot` imutável.
+- **Correção de bug (ParseError 500):** comentários Blade abriam com `{{--` mas fechavam com `—}}` (travessão Unicode em vez de `--`) nos partials, quebrando a compilação ao abrir a Aba 7. Corrigido nos 5 partials afetados.
+- **Textos finais dos boxes (conforme usuário):**
+  - **Chefia/Coordenação/Equipe C.G.:** label "Manifestação:" (antes "Manifestação final:").
+  - **Coordenação-Geral:** título "Manifestação:" com as 3 opções (CDE / CDE com condicionantes / demanda complementação).
+  - **Direção:** partial próprio com 3 opções (`apta_cde` / `restituir_spuf` / `diligencia`) + "Encaminhe-se conforme deliberado".
+- **Regras de negócio no `tramitar()`:**
+  - **Chefia:** `decl_chefia_conclusao` obrigatória; `apta_cde` → `Validação - Coordenação`; `inapta_cde` → `Análise de Viabilidade` + `Devolvido` (volta ao Painel via `next_aba=index`).
+  - **Coordenação:** `decl_coordenacao_conclusao` obrigatória; `apta_cde` → `Deliberação - Superintendência`; `inapta_cde` → `Análise de Viabilidade` + `Devolvido`.
+  - **Coordenação-Geral:** `decl_coordenacao_geral_conclusao` obrigatória; `apta_cde` → `Validação - Direção`; `inapta_cde` → `Análise de Viabilidade` + `Devolvido`.
+  - **Direção:** `decl_direcao_opcao` obrigatória; `apta_cde` → `Deliberação - CDE`; `restituir_spuf`/`diligencia` → `Validação - Coordenação-Geral` + `Devolvido`.
+- **Validação client-side do box Equipe C.G. (`aba7.blade.php`):** radios sempre obrigatórios; `obs_chk_*` obrigatórias apenas se houver "Não" na seção; condicionantes obrigatórias apenas quando visíveis (opção "com condicionantes"). "Salvar Rascunho" continua podendo ser acionado a qualquer momento.
+- **Aba 3:** removido campo "Valor de referência da área a ser destinada (R$)" (`aba3.blade.php`) e a linha do resumo `valor_area_destinada` (`aba3_analise.blade.php`).
+- **`rodar.bat`:** criado na raiz (roda `composer install` se necessário, `php artisan migrate --force` e `php artisan serve` em http://localhost:8000). Reescrito com `goto`/labels (a 1ª versão quebrou com parênteses no `echo`).
+- **Correção de bug — ícone de abrir processo sumiu no perfil "Administrador (Todos)":** admin logado como role `Direção` (não existe role `Administrador` no seeder) sem cookie de simulação → `getPerfilAtual()` retornava `'ALL'`, mas `getStatusesDoPerfil('ALL')` caía no `$map['ALL']` (inexistente) → `[]` → ícone de edição não era renderizado em `index.blade.php`. Corrigido em `ProcessoController.php` adicionando `$perfil === 'ALL'` na condição de liberação de `getStatusesDoPerfil` e `perfilPodeOperar`.
+- **Transferência de botões da Aba 3 para a Aba 2:** botões "Incluir RIP vinculado" e "Prosseguir sem RIP" removidos de `aba3.blade.php` e adicionados nos containers "Cadastro Mínimo" da Aba 2, nos dois caminhos de render (JS/Supabase e MySQL/PHP).
+- **"Incluir RIP vinculado" funcional na Aba 2:**
+  - **Migration** `2026_08_10_000001_add_foco_cadastro_minimo_id_to_foco_rips_table.php`: coluna nullable `foco_cadastro_minimo_id` (FK para `foco_cadastros_minimos`, `nullOnDelete`) em `foco_rips`.
+  - **Models:** `FocoRip` ganhou `foco_cadastro_minimo_id` no `$fillable` e relação `cadastroMinimo()` (belongsTo); `FocoCadastroMinimo` ganhou `ripsVinculados()` (hasMany).
+  - **Controller:** no branch Aba 2 de `tramitar()` (`ProcessoController.php`), novo bloco que processa `rips_vinculados[]` (JSON por item) e faz `updateOrCreate` em `foco_rips` por (`foco_cadastro_minimo_id`, `numero_rip`), gravando também `destinacao_*` / `area_*_parcial`.
+  - **View `aba2.blade.php`:** modal próprio `modalInserirRipVinculado` (mesma lógica da Aba 1: pesquisa/valida em `tabela_spu` via `window.fetchSPU`, dados do imóvel, destinação de área, Inserir / Inserir + 1) + JS em `initModalRipVinculado()` (com re-inicialização via `htmx:afterSwap` para o `#aba2-container`). RIPs vinculados aparecem como blocos "🔗 RIP Vinculado" dentro do container do Cadastro Mínimo alvo (MySQL: `rips-vinculados-cad-{id}`; fallback: `rips-vinculados-cad-js-{idx}`); hidden inputs `rips_vinculados[]` são gravados dentro do `form02` em `#hidden-rips-vinculados`.
+  - **Persistência:** apenas visual/vínculo no banco; RIP vinculado tramita como RIP normal (mesmos campos de destinação). Suporta múltiplos RIPs por cadastro.
+  - **Bug corrigido (JSON cru em `foco_rips.numero_rip`):** o JS gravava no hidden input `rips_vinculados[]` a string com HTML entities (`&quot;` no lugar de `"`) — necessária para o atributo `onclick`, mas o `value` do hidden também recebia a versão escapada. No submit, o PHP recebia `&quot;`, o `json_decode` falhava e o controller salvava o JSON inteiro como `numero_rip`. Corrigido em `aba2.blade.php` (hidden recebe o JSON puro; versão escapada só no `onclick` — o browser redecodifica ao parsear o atributo) e de forma defensiva no controller (`html_entity_decode` antes do `json_decode`). Registro `foco_rips id=60` corrompido foi reparado no banco (extração dos campos do JSON).
+
+## Pendências abertas
+
+- **Aba 1:** campo "Tipo de Requerimento" adicionado no cabeçalho, abaixo do h2 (padrão `form-group.inline` readonly), refletindo o valor do painel de requerimentos (`aba1.blade.php:67-70`).
+- **`tramitar()` ainda com valores antigos no branch `equipe_cg`:** `ProcessoController.php:726` valida `insuficiente`/`obs_equipe_cg`, mas o formulário envia `favoravel`/`favoravel_condicionantes`/`nao_favoravel` e `obs_equipe_cg_condicionantes`. Demais branches (chefia, coordenacao, coordenacao_geral, direcao) já foram atualizados.
+- **Renomeação de status incompleta em JS:** `workflow.js` e fallback `_WORKFLOW_STAGES` em `db.js` ainda usam nomes antigos — ex: "Validação análise de viabilidade - Chefia" (nova: "Validação - Chefia") e "Conferência análise de viabilidade" (nova: "Conformidade Prévia"). Ver `kb/kb_renomeacao_status_destinacao_rip_20260803_1858.md`. Impacto atual baixo (só carregado em `configuracoes.blade.php`).
+- 4 testes pré-existentes quebrados (redirecionam para `/dashboard` em vez de `/`).
+- Backlog: backfill de `destinacao_terreno`/`destinacao_imovel` para RIPs antigos; trâmite na abertura (`abrir()`).

@@ -534,20 +534,7 @@
                                 <strong>Assinado por:</strong> {{ $dadosSnapshot['assinatura_'.$prefix.'_nome'] }}
                             </div>
                             <div style="background:#ccfbf1; border:1px solid #5eead4; border-radius:6px; padding:14px; color:#0f766e; font-size:0.92em; line-height:1.6;">
-                                <strong>✔ Manifestação registrada</strong><br>
-                                @if($prefix === 'superintendencia')
-                                    Deliberação: {{ ucfirst(str_replace('_', ' ', $dadosSnapshot['sup_deliberacao'] ?? '')) }}<br>
-                                    @if(($dadosSnapshot['sup_regime_concorda'] ?? '') === 'nao')
-                                        Regime sugerido: {{ $dadosSnapshot['sup_regime_novo'] ?? 'Nenhum' }}<br>
-                                    @endif
-                                    Observações: {{ $dadosSnapshot['obs_superintendencia'] ?? 'Nenhuma observação' }}
-                                @elseif($prefix === 'cde')
-                                    Deliberação: {{ ucfirst(str_replace('_', ' ', $dadosSnapshot['cde_deliberacao'] ?? '')) }}<br>
-                                    Observações: {{ $dadosSnapshot['obs_cde'] ?? 'Nenhuma observação' }}
-                                @else
-                                    Parecer: {{ ($dadosSnapshot['decl_'.$prefix.'_opcao'] ?? '') == 'suficiente' ? 'Suficiente' : 'Insuficiente' }}<br>
-                                    Observações: {{ $dadosSnapshot['obs_'.$prefix] ?? 'Nenhuma observação' }}
-                                @endif
+                                @include('processos.abas.partials.carimbo_manifestacao', ['dadosSnapshot' => $dadosSnapshot, 'prefix' => $prefix])
                             </div>
                         </div>
                     @endif

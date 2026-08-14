@@ -90,10 +90,6 @@
         <span style="width:300px;font-weight:600;color:#334155;">Área construída destinada (m²):</span>
         <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $analise['area_construida_destinada'] ?? '-' }}</span>
     </div>
-    <div style="display:flex;align-items:baseline;margin-bottom:6px;font-size:0.9rem;">
-        <span style="width:300px;font-weight:600;color:#334155;">Valor da área destinada (R$):</span>
-        <span style="flex:1;margin-left:6px;padding:3px 10px;background:#f1f5f9;border-radius:3px;">{{ $analise['valor_area_destinada'] ?? '-' }}</span>
-    </div>
 
     <!-- 5. Custos de Manutenção para a SPU -->
     <div style="margin-top:16px; padding-top:16px; border-top:1px dashed #cbd5e1; margin-bottom: 10px;">

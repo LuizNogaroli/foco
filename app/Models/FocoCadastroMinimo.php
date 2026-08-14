@@ -36,4 +36,9 @@ class FocoCadastroMinimo extends Model
     {
         return $this->belongsTo(Foco::class);
     }
+
+    public function ripsVinculados()
+    {
+        return $this->hasMany(FocoRip::class, 'foco_cadastro_minimo_id');
+    }
 }

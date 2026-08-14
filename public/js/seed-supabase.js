@@ -102,8 +102,10 @@ async function seed() {
 
         const dadosImovel = {
             cep: (70000 + i) + '-000', // Mock de CEP
-            natureza: 'Terreno',
-            tipo_imovel: 'Dominial',
+            natureza: 'Urbano',
+            tipo_imovel: 'Lote/Terreno',
+            classificacao: 'Dominial',
+            inscricao_municipal: '8.123.456-7',
             conceituacao: 'Terreno de marinha e acrescido',
             area_total: '1000m²',
             area_uniao: '1000m²',

@@ -266,7 +266,7 @@
                 }
                 const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
                   ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
-                  ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                  ${destLine('Qual a área construída a ser destinada?', destI, areaI)}
                 </div>` : '';
                 block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                     <span class="accordion-title" style="font-weight: 600; color: #ffffff;">🏠 Imóvel (RIP): ${rip}</span>
@@ -274,8 +274,11 @@
                 </div>
                 <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">
                   ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-                  ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
                   ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+                  ${buildField('Natureza do Imóvel', dadosSPU.natureza || dadosSPU.natureza_terreno)}
+                  ${buildField('Classificação do Imóvel', dadosSPU.classificacao)}
+                  ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Urbano') ? buildField('Inscrição Municipal', dadosSPU.inscricao_municipal) : ''}
+                  ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Rural') ? buildField('CCIR', dadosSPU.ccir) : ''}
                   ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                   ${buildField('CEP', dadosSPU.cep)}
                   ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
@@ -315,7 +318,7 @@
                 }
                 const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
                   ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
-                  ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
+                  ${destLine('Qual a área construída a ser destinada?', destI, areaI)}
                 </div>` : '';
                 const lat = cad.latitude || '';
                 const lng = cad.longitude || '';
@@ -328,6 +331,10 @@
                 const mapaHtml = (lat && lng) ? `<div style="width:320px;flex-shrink:0;min-height:260px;"><div id="mapa-cad-${idx}" data-leaflet-map style="width:100%;height:100%;min-height:260px;border:1px solid #cbd5e1;border-radius:6px;"></div></div>` : '';
                 block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                     <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #${idx+1} (Sem RIP)</span>
+                    <div style="display:inline-flex; gap: 8px; margin-left: 15px;">
+                      <button type="button" onclick="abrirModalRipVinculado('js-${idx}'); event.stopPropagation();" style="padding: 2px 8px; font-size: 0.75rem; background: #e0f2fe; color: #0369a1; border: none; border-radius: 4px; cursor: pointer;">Incluir RIP</button>
+                      <button type="button" style="padding: 2px 8px; font-size: 0.75rem; background: #f1f5f9; color: #475569; border: none; border-radius: 4px; cursor: pointer;">Prosseguir sem RIP</button>
+                    </div>
                     <span class="accordion-icon">▶</span>
                 </div>
                 <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:row;gap:15px;align-items:stretch;">
@@ -342,6 +349,7 @@
                     ${cad.observacoes ? cadFieldFull('Observações', cad.observacoes) : ''}
                   </div>
                   ${destBox}
+                  <div id="rips-vinculados-cad-js-${idx}" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;"></div>
                   </div>
                   ${mapaHtml}
                 </div></div>`;
@@ -383,12 +391,15 @@
                   }
                   const destBox = (destT || destI) ? `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:0.9rem;">
                     ${destLine('Qual a área do terreno a ser destinada?', destT, areaT)}
-                    ${destLine('Qual a área do imóvel a ser destinada?', destI, areaI)}
-                  </div>` : '';
+                    ${destLine('Qual a área construída a ser destinada?', destI, areaI)}
+                    </div>` : '';
                   el.innerHTML = `<div>
                     ${f('Conceituação do Imóvel', d.conceituacao)}
-                    ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
                     ${f('Tipo de Imóvel', d.tipo_imovel)}
+                    ${f('Natureza do Imóvel', d.natureza || d.natureza_terreno)}
+                    ${f('Classificação do Imóvel', d.classificacao)}
+                    ${(String(d.natureza || d.natureza_terreno).trim() === 'Urbano') ? f('Inscrição Municipal', d.inscricao_municipal) : ''}
+                    ${(String(d.natureza || d.natureza_terreno).trim() === 'Rural') ? f('CCIR', d.ccir) : ''}
                     ${f('Condição de Urbanização', d.condicao_urbanizacao)}
                     ${f('CEP', d.cep)}
                     ${f('Logradouro', d.logradouro || d.endereco)}
@@ -419,6 +430,10 @@
               <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                 <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
                   <span>📝 Cadastro Mínimo #{{ $loop->index+1 }} (Sem RIP)</span>
+                  <div style="display:inline-flex; gap: 8px; margin-left: 15px;">
+                    <button type="button" style="padding: 2px 8px; font-size: 0.75rem; background: #e0f2fe; color: #0369a1; border: none; border-radius: 4px; cursor: pointer;" onclick="abrirModalRipVinculado('{{ $cad->id ?? 'js-' . $loop->index }}'); event.stopPropagation();">Incluir RIP</button>
+                    <button type="button" style="padding: 2px 8px; font-size: 0.75rem; background: #f1f5f9; color: #475569; border: none; border-radius: 4px; cursor: pointer;">Prosseguir sem RIP</button>
+                  </div>
                   <span class="accordion-icon">▶</span>
                 </div>
                 <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;">
@@ -455,6 +470,19 @@
                         <div><span style="font-weight:600;color:#1e293b;">Qual a área do imóvel a ser destinada?</span><br><span style="color:#166534;">{{ $cad->destinacao_imovel ?? '-' }}</span>@if($cad->destinacao_imovel === 'Parcial' && $cad->area_imovel_parcial) — <strong>Metragem:</strong> {{ $cad->area_imovel_parcial }} m² @endif</div>
                       </div>
                       @endif
+                      <div id="rips-vinculados-cad-{{ $cad->id ?? 'js-' . $loop->index }}" style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+                        @foreach(($cad->ripsVinculados ?? collect()) as $ripV)
+                        <div style="background:#eff6ff;border:1px solid #bfdbfe;padding:8px 12px;border-radius:6px;font-size:0.85rem;">
+                          <strong style="color:#1d4ed8;">🔗 RIP Vinculado:</strong> {{ $ripV->numero_rip }}
+                          @if($ripV->destinacao_terreno)
+                          <div style="margin-top:4px;color:#334155;"><strong>Destinação do terreno:</strong> {{ $ripV->destinacao_terreno }}@if($ripV->destinacao_terreno === 'Parcial' && $ripV->area_terreno_parcial) — {{ $ripV->area_terreno_parcial }} m² @endif</div>
+                          @endif
+                          @if($ripV->destinacao_imovel)
+                          <div style="color:#334155;"><strong>Destinação do imóvel:</strong> {{ $ripV->destinacao_imovel }}@if($ripV->destinacao_imovel === 'Parcial' && $ripV->area_imovel_parcial) — {{ $ripV->area_imovel_parcial }} m² @endif</div>
+                          @endif
+                        </div>
+                        @endforeach
+                      </div>
                     </div>
                     @if($cadLat && $cadLng)
                     <div style="width:320px;flex-shrink:0;min-height:260px;">
@@ -474,6 +502,17 @@
               @endforeach
             </div>
           @endif
+
+          <div style="margin-top:15px; padding:12px; background:#fff1f2; border:1px solid #fda4af; border-radius:6px; font-size:0.9rem;">
+            <div style="font-weight:600; color:#9f1239; margin-bottom:5px;">Há inconsistências cadastrais?</div>
+            <div style="display:flex; gap:15px; margin-bottom:8px;">
+              <label style="cursor:pointer;"><input type="radio" name="rip_alteracao_sim_nao" value="Sim" onclick="document.getElementById('bloco-alteracao-rip').style.display='block'"> Sim</label>
+              <label style="cursor:pointer;"><input type="radio" name="rip_alteracao_sim_nao" value="Não" onclick="document.getElementById('bloco-alteracao-rip').style.display='none'"> Não</label>
+            </div>
+            <div id="bloco-alteracao-rip" style="display:none;">
+              <textarea name="rip_alteracao_descricao" style="width:100%; padding:8px; border:1px solid #fda4af; border-radius:4px; font-family:inherit; font-size:0.9rem;" placeholder="Descreva as alterações necessárias..."></textarea>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -500,6 +539,7 @@
         @csrf
         <input type="hidden" name="aba_atual" value="2">
         <input type="hidden" name="next_aba" value="index">
+        <div id="hidden-rips-vinculados"></div>
 
             <!-- Bloco Retornar Processo -->
             @if($processo->tramitacao === 'Devolvido')
@@ -838,14 +878,11 @@
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Terra indígena" {{ isset($dados['restricoes']) && in_array('Terra indígena', (array)$dados['restricoes']) ? 'checked' : '' }} /> Terra indígena</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Território quilombola ou área de comunidade tradicional" {{ isset($dados['restricoes']) && in_array('Território quilombola ou área de comunidade tradicional', (array)$dados['restricoes']) ? 'checked' : '' }} /> Território quilombola ou área de comunidade tradicional</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Zona/Área de Interesse Social (ZEIS)" {{ isset($dados['restricoes']) && in_array('Zona/Área de Interesse Social (ZEIS)', (array)$dados['restricoes']) ? 'checked' : '' }} /> Zona/Área de Interesse Social — ZEIS</label>
-                      <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Área de segurança" {{ isset($dados['restricoes']) && in_array('Área de segurança', (array)$dados['restricoes']) ? 'checked' : '' }} /> Área de segurança</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Área Non Aedificandi" {{ isset($dados['restricoes']) && in_array('Área Non Aedificandi', (array)$dados['restricoes']) ? 'checked' : '' }} /> Área Non Aedificandi</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Restrição de uso/ocupação incidente sobre o imóvel" {{ isset($dados['restricoes']) && in_array('Restrição de uso/ocupação incidente sobre o imóvel', (array)$dados['restricoes']) ? 'checked' : '' }} /> Restrição de uso/ocupação incidente sobre o imóvel</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Tombado como patrimônio histórico, artístico e/ou cultural" {{ isset($dados['restricoes']) && in_array('Tombado como patrimônio histórico, artístico e/ou cultural', (array)$dados['restricoes']) ? 'checked' : '' }} /> Tombado como patrimônio histórico, artístico e/ou cultural</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Poligonal de Porto Organizado" {{ isset($dados['restricoes']) && in_array('Poligonal de Porto Organizado', (array)$dados['restricoes']) ? 'checked' : '' }} /> Poligonal de Porto Organizado</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Área operacional da RFFSA" {{ isset($dados['restricoes']) && in_array('Área operacional da RFFSA', (array)$dados['restricoes']) ? 'checked' : '' }} /> Área operacional da RFFSA</label>
-                      <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Ilha oceânica ou costeira sem sede de município" {{ isset($dados['restricoes']) && in_array('Ilha oceânica ou costeira sem sede de município', (array)$dados['restricoes']) ? 'checked' : '' }} /> Ilha oceânica ou costeira sem sede de município</label>
-                      <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Ilha fluvial ou lacustre" {{ isset($dados['restricoes']) && in_array('Ilha fluvial ou lacustre', (array)$dados['restricoes']) ? 'checked' : '' }} /> Ilha fluvial ou lacustre</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Localizada em loteamento" {{ isset($dados['restricoes']) && in_array('Localizada em loteamento', (array)$dados['restricoes']) ? 'checked' : '' }} /> Localizada em loteamento</label>
                       <label class="checkbox-option"><input type="checkbox" name="restricoes[]" value="Outra restrição identificada" {{ isset($dados['restricoes']) && in_array('Outra restrição identificada', (array)$dados['restricoes']) ? 'checked' : '' }} /> Outra restrição identificada</label>
                   </div>
@@ -1011,4 +1048,269 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Incluir RIP Vinculado (Cadastro Mínimo) -->
+    <div id="modalInserirRipVinculado" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:5000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:30px; border-radius:12px; max-width:600px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.3); position:relative; border-top: 8px solid #1e3a5f;">
+            <button id="btnFecharModalRipVinculado" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
+            <h2 style="margin-top:0; color:#1e3a5f; font-size:20px; text-align: left; margin-bottom: 20px;">Incluir RIP Vinculado</h2>
+
+            <div style="margin-bottom: 20px; text-align: left;">
+                <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e3a5f;">Número do RIP:</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="inputNumeroRipVinculado" style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none;" placeholder="Digite o RIP...">
+                    <button type="button" id="btnPesquisarRipVinculado" class="btn-inst btn-inst-primary" style="padding: 10px 20px; font-size: 0.9rem;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        Pesquisar
+                    </button>
+                </div>
+                <span id="errRipVinculadoNaoEncontrado" style="display:none; color:#dc2626; font-size:0.85em; margin-top:5px; font-weight:600;"></span>
+            </div>
+
+            <div id="dadosRipVinculadoPesquisado" style="display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; font-size: 0.9rem; color: #334155; text-align: left;">
+                <h3 style="margin-top: 0; color: #1e3a5f; font-size: 16px; margin-bottom: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Dados do Imóvel</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div style="grid-column: 1 / -1;"><strong>Endereço:</strong> <span id="ripVinculadoEndereco">-</span></div>
+                    <div><strong>Bairro:</strong> <span id="ripVinculadoBairro">-</span></div>
+                    <div><strong>CEP:</strong> <span id="ripVinculadoCep">-</span></div>
+                    <div><strong>Município:</strong> <span id="ripVinculadoMunicipio">-</span></div>
+                    <div><strong>UF:</strong> <span id="ripVinculadoUf">-</span></div>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 15px; margin-bottom: 20px; text-align: left;">
+                <h4 style="margin-top: 0; color: #1e3a5f; margin-bottom: 15px; font-size: 15px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px;">Destinação de Área</h4>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área do terreno a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno_rip_vinculado" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_terreno_rip_vinculado" value="Parcial"> Parcial</label>
+
+                        <div id="containerAreaTerrenoParcialRipVinculado" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaTerrenoRipVinculado" placeholder="Ex: 500" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #1e293b; font-size: 14px;">Qual a área construída a ser destinada?</label>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip_vinculado" value="Integral" checked> Integral</label>
+                        <label style="cursor: pointer;"><input type="radio" name="destinacao_imovel_rip_vinculado" value="Parcial"> Parcial</label>
+
+                        <div id="containerAreaImovelParcialRipVinculado" style="display: none; align-items: center; gap: 8px; margin-left: 10px;">
+                            <label style="font-size: 13px; color: #475569;">Metragem:</label>
+                            <input type="number" id="modalAreaImovelRipVinculado" placeholder="Ex: 150" style="width: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; outline: none;"> <span style="color: #64748b;">m²</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; gap: 10px;">
+                <button type="button" id="btnCancelarRipVinculado" class="btn-inst btn-inst-outline" style="flex: 1;">Cancelar</button>
+                <button type="button" id="btnMaisRipVinculado" class="btn-inst btn-inst-outline" style="flex: 1.5; font-size: 0.85rem; padding: 10px 5px;">Inserir + 1 RIP</button>
+                <button type="button" id="btnSalvarRipVinculado" class="btn-inst btn-inst-primary" style="flex: 1;">Inserir</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function initModalRipVinculado() {
+        const modalRipVinculado = document.getElementById('modalInserirRipVinculado');
+        const btnFecharModalRipVinculado = document.getElementById('btnFecharModalRipVinculado');
+        const btnCancelarRipVinculado = document.getElementById('btnCancelarRipVinculado');
+        const btnSalvarRipVinculado = document.getElementById('btnSalvarRipVinculado');
+        const btnMaisRipVinculado = document.getElementById('btnMaisRipVinculado');
+        const btnPesquisarRipVinculado = document.getElementById('btnPesquisarRipVinculado');
+        const inputNumeroRipVinculado = document.getElementById('inputNumeroRipVinculado');
+        if (!modalRipVinculado) return;
+
+        window.__cadastroRipVinculadoAlvo = null;
+
+        function mostrarErroRipVinculado(msg) {
+            const el = document.getElementById('errRipVinculadoNaoEncontrado');
+            if (el) { el.textContent = msg; el.style.display = 'block'; }
+        }
+        function limparErroRipVinculado() {
+            const el = document.getElementById('errRipVinculadoNaoEncontrado');
+            if (el) el.style.display = 'none';
+        }
+        function fecharModalRipVinculado() {
+            if (modalRipVinculado) modalRipVinculado.style.display = 'none';
+            const dadosBox = document.getElementById('dadosRipVinculadoPesquisado');
+            if (dadosBox) dadosBox.style.display = 'none';
+            limparErroRipVinculado();
+        }
+
+        window.abrirModalRipVinculado = function(alvo) {
+            window.__cadastroRipVinculadoAlvo = alvo;
+            if (modalRipVinculado) modalRipVinculado.style.display = 'flex';
+            if (inputNumeroRipVinculado) { inputNumeroRipVinculado.value = ''; inputNumeroRipVinculado.style.borderColor = ''; }
+            limparErroRipVinculado();
+            const dadosBox = document.getElementById('dadosRipVinculadoPesquisado');
+            if (dadosBox) dadosBox.style.display = 'none';
+        };
+
+        function obterDestinacoesRipVinculado() {
+            const destTerreno = document.querySelector('input[name="destinacao_terreno_rip_vinculado"]:checked')?.value || 'Integral';
+            const areaTerreno = destTerreno === 'Parcial' ? (document.getElementById('modalAreaTerrenoRipVinculado')?.value || '') : '';
+            const destImovel = document.querySelector('input[name="destinacao_imovel_rip_vinculado"]:checked')?.value || 'Integral';
+            const areaImovel = destImovel === 'Parcial' ? (document.getElementById('modalAreaImovelRipVinculado')?.value || '') : '';
+            return { destTerreno, areaTerreno, destImovel, areaImovel };
+        }
+
+        function resetarDestinacoesRipVinculado() {
+            document.querySelectorAll('input[name="destinacao_terreno_rip_vinculado"]').forEach((r, idx) => r.checked = idx === 0);
+            document.querySelectorAll('input[name="destinacao_imovel_rip_vinculado"]').forEach((r, idx) => r.checked = idx === 0);
+            if (document.getElementById('modalAreaTerrenoRipVinculado')) document.getElementById('modalAreaTerrenoRipVinculado').value = '';
+            if (document.getElementById('modalAreaImovelRipVinculado')) document.getElementById('modalAreaImovelRipVinculado').value = '';
+            if (document.getElementById('containerAreaTerrenoParcialRipVinculado')) document.getElementById('containerAreaTerrenoParcialRipVinculado').style.display = 'none';
+            if (document.getElementById('containerAreaImovelParcialRipVinculado')) document.getElementById('containerAreaImovelParcialRipVinculado').style.display = 'none';
+        }
+
+        function adicionarRipVinculadoNaLista(rip, spuData, destT, areaT, destI, areaI) {
+            const alvo = window.__cadastroRipVinculadoAlvo;
+            if (!alvo) return;
+            let containerId = 'rips-vinculados-cad-' + alvo;
+            let focoCadastroMinimoId = alvo;
+            if (String(alvo).indexOf('js-') === 0) {
+                containerId = 'rips-vinculados-cad-' + alvo;
+                focoCadastroMinimoId = null;
+            }
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const ripObj = {
+                numero_rip: rip,
+                foco_cadastro_minimo_id: focoCadastroMinimoId,
+                destinacao_terreno: destT,
+                area_terreno_parcial: areaT,
+                destinacao_imovel: destI,
+                area_imovel_parcial: areaI
+            };
+            const dadosJsonStr = JSON.stringify(ripObj);
+            const dadosJsonEscaped = dadosJsonStr.replace(/"/g, '&quot;');
+
+            const div = document.createElement('div');
+            div.className = 'rip-vinculado-item';
+            div.style.cssText = 'background:#eff6ff;border:1px solid #bfdbfe;padding:8px 12px;border-radius:6px;font-size:0.85rem;';
+            div.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                    <div style="flex:1;"><strong style="color:#1d4ed8;">🔗 RIP Vinculado:</strong> ${rip}</div>
+                    <span style="cursor:pointer;color:#ef4444;font-size:18px;font-weight:bold;" onclick="window.removerRipVinculado(this, '${dadosJsonEscaped}')">&times;</span>
+                </div>
+                <div style="margin-top:4px;color:#334155;">
+                    <div><strong>Destinação do terreno:</strong> ${destT}${destT === 'Parcial' && areaT ? ' — ' + areaT + ' m²' : ''}</div>
+                    <div><strong>Destinação do imóvel:</strong> ${destI}${destI === 'Parcial' && areaI ? ' — ' + areaI + ' m²' : ''}</div>
+                </div>
+            `;
+            container.appendChild(div);
+
+            const formHidden = document.getElementById('hidden-rips-vinculados');
+            const inputHidden = document.createElement('input');
+            inputHidden.type = 'hidden';
+            inputHidden.name = 'rips_vinculados[]';
+            inputHidden.value = dadosJsonStr;
+            if (formHidden) formHidden.appendChild(inputHidden);
+            else container.appendChild(inputHidden);
+        }
+
+        window.removerRipVinculado = function(el, jsonStr) {
+            const item = el.closest('.rip-vinculado-item');
+            if (item) item.remove();
+            const formHidden = document.getElementById('hidden-rips-vinculados');
+            const scope = formHidden || document;
+            const all = scope.querySelectorAll('input[name="rips_vinculados[]"]');
+            all.forEach(function(inp) {
+                if (inp.value === jsonStr) inp.remove();
+            });
+        };
+
+        if (btnFecharModalRipVinculado) btnFecharModalRipVinculado.addEventListener('click', fecharModalRipVinculado);
+        if (btnCancelarRipVinculado) btnCancelarRipVinculado.addEventListener('click', fecharModalRipVinculado);
+        if (inputNumeroRipVinculado) inputNumeroRipVinculado.addEventListener('input', limparErroRipVinculado);
+
+        document.querySelectorAll('input[name="destinacao_terreno_rip_vinculado"]').forEach(function(r) {
+            r.addEventListener('change', function() {
+                const container = document.getElementById('containerAreaTerrenoParcialRipVinculado');
+                if (container) container.style.display = (r.value === 'Parcial') ? 'flex' : 'none';
+            });
+        });
+        document.querySelectorAll('input[name="destinacao_imovel_rip_vinculado"]').forEach(function(r) {
+            r.addEventListener('change', function() {
+                const container = document.getElementById('containerAreaImovelParcialRipVinculado');
+                if (container) container.style.display = (r.value === 'Parcial') ? 'flex' : 'none';
+            });
+        });
+
+        if (btnPesquisarRipVinculado) {
+            btnPesquisarRipVinculado.addEventListener('click', async () => {
+                limparErroRipVinculado();
+                const rip = inputNumeroRipVinculado ? inputNumeroRipVinculado.value.trim() : '';
+                if (rip === '') return;
+                const originalText = btnPesquisarRipVinculado.innerHTML;
+                btnPesquisarRipVinculado.innerHTML = 'Pesquisando...';
+                btnPesquisarRipVinculado.disabled = true;
+                const spuData = await window.fetchSPU(rip);
+                const existe = spuData && (spuData.numero_rip || spuData.cep);
+                btnPesquisarRipVinculado.innerHTML = originalText;
+                btnPesquisarRipVinculado.disabled = false;
+                const dadosBox = document.getElementById('dadosRipVinculadoPesquisado');
+                if (!existe) {
+                    mostrarErroRipVinculado('RIP não encontrado na tabela_spu!');
+                    if (inputNumeroRipVinculado) inputNumeroRipVinculado.style.borderColor = '#dc2626';
+                    if (dadosBox) dadosBox.style.display = 'none';
+                    return;
+                }
+                if (inputNumeroRipVinculado) inputNumeroRipVinculado.style.borderColor = '#22c55e';
+                if (dadosBox) {
+                    dadosBox.style.display = 'block';
+                    document.getElementById('ripVinculadoEndereco').textContent = spuData.logradouro || '-';
+                    document.getElementById('ripVinculadoCep').textContent = spuData.cep || '-';
+                    document.getElementById('ripVinculadoBairro').textContent = spuData.bairro || '-';
+                    document.getElementById('ripVinculadoMunicipio').textContent = spuData.municipio || '-';
+                    document.getElementById('ripVinculadoUf').textContent = spuData.uf || '-';
+                }
+            });
+        }
+
+        async function inserirRipVinculado(manterAberto) {
+            limparErroRipVinculado();
+            const rip = inputNumeroRipVinculado ? inputNumeroRipVinculado.value.trim() : '';
+            if (rip === '') return;
+            const spuData = await window.fetchSPU(rip);
+            const existe = spuData && (spuData.numero_rip || spuData.cep);
+            if (!existe) {
+                mostrarErroRipVinculado('RIP não encontrado na tabela_spu!');
+                if (inputNumeroRipVinculado) inputNumeroRipVinculado.style.borderColor = '#dc2626';
+                return;
+            }
+            if (inputNumeroRipVinculado) inputNumeroRipVinculado.style.borderColor = '';
+            const { destTerreno, areaTerreno, destImovel, areaImovel } = obterDestinacoesRipVinculado();
+            adicionarRipVinculadoNaLista(rip, spuData, destTerreno, areaTerreno, destImovel, areaImovel);
+            resetarDestinacoesRipVinculado();
+            if (manterAberto) {
+                if (inputNumeroRipVinculado) { inputNumeroRipVinculado.value = ''; inputNumeroRipVinculado.focus(); }
+                const dadosBox = document.getElementById('dadosRipVinculadoPesquisado');
+                if (dadosBox) dadosBox.style.display = 'none';
+            } else {
+                fecharModalRipVinculado();
+            }
+        }
+
+        if (btnSalvarRipVinculado) btnSalvarRipVinculado.addEventListener('click', () => inserirRipVinculado(false));
+        if (btnMaisRipVinculado) btnMaisRipVinculado.addEventListener('click', () => inserirRipVinculado(true));
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initModalRipVinculado);
+    } else {
+        initModalRipVinculado();
+    }
+    document.addEventListener('htmx:afterSwap', function(e) {
+        if (e.target && e.target.id === 'aba2-container') initModalRipVinculado();
+    });
+    </script>
 

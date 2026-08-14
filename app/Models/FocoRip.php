@@ -15,6 +15,7 @@ class FocoRip extends Model
 
     protected $fillable = [
         'foco_id',
+        'foco_cadastro_minimo_id',
         'numero_rip',
         'destinacao_terreno',
         'area_terreno_parcial',
@@ -25,5 +26,10 @@ class FocoRip extends Model
     public function foco()
     {
         return $this->belongsTo(Foco::class);
+    }
+
+    public function cadastroMinimo()
+    {
+        return $this->belongsTo(FocoCadastroMinimo::class, 'foco_cadastro_minimo_id');
     }
 }

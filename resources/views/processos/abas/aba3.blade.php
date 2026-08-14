@@ -419,8 +419,11 @@
                     block.innerHTML = `<div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)"><span class="accordion-title" style="font-weight: 600; color: #ffffff;">🏠 Imóvel (RIP): ${rip}</span><span class="accordion-icon">▶</span></div>
                     <div class="accordion-body collapsed" style="display: none; padding: 15px; border: 1px solid #cbd5e1; border-top: none; border-radius: 0 0 8px 8px; background: #ffffff;"><div style="display:flex;flex-direction:column;">
                       ${buildField('Conceituação do Imóvel', dadosSPU.conceituacao)}
-                      ${buildField('Natureza do Terreno', dadosSPU.natureza || dadosSPU.natureza_terreno)}
                       ${buildField('Tipo de Imóvel', dadosSPU.tipo_imovel)}
+                      ${buildField('Natureza do Imóvel', dadosSPU.natureza || dadosSPU.natureza_terreno)}
+                      ${buildField('Classificação do Imóvel', dadosSPU.classificacao)}
+                      ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Urbano') ? buildField('Inscrição Municipal', dadosSPU.inscricao_municipal) : ''}
+                      ${(String(dadosSPU.natureza || dadosSPU.natureza_terreno).trim() === 'Rural') ? buildField('CCIR', dadosSPU.ccir) : ''}
                       ${buildField('Condição de Urbanização', dadosSPU.condicao_urbanizacao)}
                       ${buildField('CEP', dadosSPU.cep)}
                       ${buildField('Logradouro', dadosSPU.logradouro || dadosSPU.endereco)}
@@ -531,8 +534,11 @@
                       </div>` : '';
                       el.innerHTML = `<div style="display:flex;flex-direction:column;">
                           ${f('Conceituação do Imóvel', d.conceituacao)}
-                          ${f('Natureza do Terreno', d.natureza || d.natureza_terreno)}
                           ${f('Tipo de Imóvel', d.tipo_imovel)}
+                          ${f('Natureza do Imóvel', d.natureza || d.natureza_terreno)}
+                          ${f('Classificação do Imóvel', d.classificacao)}
+                          ${(String(d.natureza || d.natureza_terreno).trim() === 'Urbano') ? f('Inscrição Municipal', d.inscricao_municipal) : ''}
+                          ${(String(d.natureza || d.natureza_terreno).trim() === 'Rural') ? f('CCIR', d.ccir) : ''}
                           ${f('Condição de Urbanização', d.condicao_urbanizacao)}
                         ${f('CEP', d.cep)}
                         ${f('Logradouro', d.logradouro || d.endereco)}
@@ -559,12 +565,26 @@
                   @php
                       $cadLat = $cad->latitude ?? '';
                       $cadLng = $cad->longitude ?? '';
+                      $ripsVincA3 = $cad->ripsVinculados ?? collect();
                   @endphp
                   <div style="background:white;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
                     <div class="accordion-header" style="background-color: #1e3a5f; color: white; border-radius: 8px;" onclick="toggleAccordion(this)">
-                      <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #{{ $idx+1 }} (Sem RIP)</span><span class="accordion-icon">▶</span>
+                      <span class="accordion-title" style="font-weight: 600; color: #ffffff;">📝 Cadastro Mínimo #{{ $idx+1 }} (Sem RIP)</span>
+                      @if($ripsVincA3->isNotEmpty())
+                      <span style="display:inline-flex;align-items:center;gap:5px;background:#1d4ed8;color:#fff;padding:2px 10px;border-radius:999px;font-size:0.72rem;font-weight:600;margin-left:10px;">🔗 Transformado em RIP @foreach($ripsVincA3 as $rv){{ $loop->first ? '' : ', ' }}{{ $rv->numero_rip }}@endforeach</span>
+                      @endif
+                      <span class="accordion-icon">▶</span>
                     </div>
                     <div style="padding:16px;display:none;background:#fff;">
+                      @if($ripsVincA3->isNotEmpty())
+                      <div style="margin-bottom:12px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:0.9rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="font-size:1.1rem;">🔗</span>
+                        <span><strong style="color:#1d4ed8;">Área transformada no RIP:</strong></span>
+                        @foreach($ripsVincA3 as $rv)
+                        <span style="display:inline-block;background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:999px;font-weight:600;">{{ $rv->numero_rip }}</span>
+                        @endforeach
+                      </div>
+                      @endif
                       <div style="display:flex;flex-direction:row;gap:15px;align-items:stretch;">
                         <div style="flex:1;min-width:0;">
                           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;font-size:0.9rem;">
@@ -666,7 +686,12 @@
         <!-- Dados do Destinatário -->
         <h4 class="section-title">Análise do Destinatário</h4>
         <div class="form-group editavel">
-          <label>CPF/CNPJ regular?</label>
+          <label style="display:flex; flex-wrap:wrap; align-items:center; gap:8px;">CPF/CNPJ regular?
+            <span style="display:inline-flex; flex-wrap:wrap; gap:8px;">
+              <a href="https://servicos.receita.fazenda.gov.br/servicos/cpf/consultasituacao/consultapublica.asp" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:4px 10px; background-color:#0284c7; color:#fff; border-radius:6px; font-size:11px; text-decoration:none; font-weight:600;">Consultar CPF</a>
+              <a href="https://solucoes.receita.fazenda.gov.br/Servicos/cnpjreva/" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding:4px 10px; background-color:#0284c7; color:#fff; border-radius:6px; font-size:11px; text-decoration:none; font-weight:600;">Consultar CNPJ</a>
+            </span>
+          </label>
           <div class="radio-group">
             <label class="radio-option"
               ><input
@@ -804,7 +829,7 @@
               <option value="203-8">203-8 - Sociedade de Economia Mista</option>
               <option value="204-6">204-6 - Sociedade Anônima Aberta</option>
               <option value="205-4">205-4 - Sociedade Anônima Fechada</option>
-              <option value="206-2" selected>
+              <option value="206-2">
                 206-2 - Sociedade Empresária Limitada
               </option>
               <option value="207-0">
@@ -1162,7 +1187,7 @@
         >
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
             <div class="form-group">
-              <label for="area_total_imovel">Área total do imóvel (m²):</label>
+              <label for="area_total_imovel">Área total do imóvel a ser destinada (m²):</label>
               <input
                 type="text"
                 id="area_total_imovel"
@@ -1174,7 +1199,7 @@
             </div>
             <div class="form-group">
               <label for="valor_total_imovel"
-                >Valor total do imóvel (R$):</label
+                >Valor total da área a ser destinada (R$):</label
               >
               <input
                 type="text"
@@ -1194,47 +1219,24 @@
               margin-top: 10px;
               border-top: 1px dashed #cbd5e1;
               padding-top: 10px;
+              display: none;
             "
           >
-            <div class="form-group">
-              <label for="area_terreno_destinada"
-                >Área do terreno a ser destinada (m²):</label
-              >
-              <input
-                type="text"
-                id="area_terreno_destinada"
-                name="area_terreno_destinada"
-                placeholder="Ex: 1.200,00"
-                autocomplete="off"
-                readonly
-              / value="{{ $dados['area_terreno_destinada'] ?? '' }}">
-            </div>
-            <div class="form-group">
-              <label for="area_construida_destinada"
-                >Área construída a ser destinada (m²):</label
-              >
-              <input
-                type="text"
-                id="area_construida_destinada"
-                name="area_construida_destinada"
-                placeholder="Ex: 800,00"
-                autocomplete="off"
-                readonly
-              / value="{{ $dados['area_construida_destinada'] ?? '' }}">
-            </div>
           </div>
-          <div class="form-group" style="margin-top: 10px">
-            <label for="valor_area_destinada"
-              >Valor de referência da área a ser destinada (R$):</label
-            >
-            <input
-              type="text"
-              id="valor_area_destinada"
-              name="valor_area_destinada"
-              placeholder="Ex: 360.000,00"
-              autocomplete="off"
-              readonly
-            / value="{{ $dados['valor_area_destinada'] ?? '' }}">
+          <div class="form-group" style="margin-top: 15px">
+            <label>Há necessidade de mudanças de área ou valor?</label>
+            <div class="radio-group">
+              <label class="radio-option">
+                <input type="radio" name="necessidade_mudanca" value="Sim" onclick="document.getElementById('bloco-justificativa-mudanca').style.display='block'"> Sim
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="necessidade_mudanca" value="Não" onclick="document.getElementById('bloco-justificativa-mudanca').style.display='none'"> Não
+              </label>
+            </div>
+            <div id="bloco-justificativa-mudanca" style="display: none; margin-top: 8px;">
+              <label for="justificativa_mudanca">Justificativa da mudança:</label>
+              <textarea id="justificativa_mudanca" name="justificativa_mudanca" rows="3" placeholder="Justifique o pedido de mudança..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -1355,9 +1357,6 @@
           <select id="campo51" name="tipo_procedimento" required data-selected="{{ $dados['tipo_procedimento'] ?? '' }}">
             <option value="">Selecione...</option>
             <option value="Nova destinação">Nova destinação</option>
-            <option value="Renovação/alteração contratual">
-              Renovação/alteração contratual
-            </option>
             <option value="Regularização de uso">Regularização de uso</option>
           </select>
           <span class="error-msg" id="err51" style="display: none"
@@ -1628,319 +1627,37 @@
           </div>
         </div>
 
-        <div class="form-group editavel">
-          <label
-            >Há vinculação com Programas/Estratégias de governo?
-            <span class="hint-semaforo"
-              ><span
-                class="hint-icon"
-                data-hint-tipo="verde"
-                data-hint="Indique se a destinação proposta está vinculada a programas ou estratégias governamentais."
-                role="tooltip"
-                tabindex="0"
-                aria-label="Ajuda: Vinculação estratégica"
-                >?</span
-              ></span
-            >
-          </label>
-          <div class="radio-group" id="group-campo56-radio">
-            <label class="radio-option"
-              ><input type="radio" name="campo56_radio" value="Sim" required {{ isset($dados['campo56_radio']) && $dados['campo56_radio'] == 'Sim' ? 'checked' : '' }}>
-              Sim</label
-            >
-            <label class="radio-option"
-              ><input type="radio" name="campo56_radio" value="Não" {{ isset($dados['campo56_radio']) && $dados['campo56_radio'] == 'Não' ? 'checked' : '' }}>
-              Não</label
-            >
-            <label class="radio-option"
-              ><input
-                type="radio"
-                name="campo56_radio"
-                value="Sem informação"
-              {{ isset($dados['campo56_radio']) && $dados['campo56_radio'] == 'Sem informação' ? 'checked' : '' }}>
-              Sem informação</label
-            >
-          </div>
-          <span class="error-msg" id="err56" style="display: none"
-            >Selecione uma opção.</span
-          >
-          <div id="group-campo56" style="display: none; margin-top: 8px">
-            <div class="checkbox-group" id="campo56-checks">
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Programa Minha Casa Minha Vida"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Programa Minha Casa Minha Vida', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Programa Minha Casa Minha Vida</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Programa de Regularização Fundiária (REURB)"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Programa de Regularização Fundiária (REURB)', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Programa de Regularização Fundiária (REURB)</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Programa de Desestatização/Privatização"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Programa de Desestatização/Privatização', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Programa de Desestatização/Privatização</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Programa de infraestrutura federal"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Programa de infraestrutura federal', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Programa de infraestrutura federal</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Plano de desenvolvimento regional"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Plano de desenvolvimento regional', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Plano de desenvolvimento regional</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo56[]"
-                  value="Outro programa ou estratégia"
-                  onchange="toggleObs56()"
-                {{ isset($dados['campo56']) && in_array('Outro programa ou estratégia', (array)$dados['campo56']) ? 'checked' : '' }}>
-                Outro programa ou estratégia (descrever nas observações)</label
-              >
-            </div>
-            <div id="bloco56_obs" style="display: none; margin-top: 8px">
-              <label for="campo56_obs">Observações complementares:</label>
-              <textarea
-                id="campo56_obs"
-                name="campo56_obs"
-                placeholder="Descreva a vinculação estratégica..."
-              >{{ $dados['campo56_obs'] ?? '' }}</textarea>
-            </div>
-          </div>
-        </div>
 
         <div class="form-group editavel">
-          <label
-            >Há vinculação com Políticas Públicas?
-            <span class="hint-semaforo"
-              ><span
-                class="hint-icon"
-                data-hint-tipo="verde"
-                data-hint="Indique as políticas públicas às quais a destinação proposta se vincula."
-                role="tooltip"
-                tabindex="0"
-                aria-label="Ajuda: Políticas vinculadas"
-                >?</span
-              ></span
-            >
-          </label>
-          <div class="radio-group" id="group-campo57-radio">
-            <label class="radio-option"
-              ><input type="radio" name="campo57_radio" value="Sim" required {{ isset($dados['campo57_radio']) && $dados['campo57_radio'] == 'Sim' ? 'checked' : '' }}>
-              Sim</label
-            >
-            <label class="radio-option"
-              ><input type="radio" name="campo57_radio" value="Não" {{ isset($dados['campo57_radio']) && $dados['campo57_radio'] == 'Não' ? 'checked' : '' }}>
-              Não</label
-            >
-            <label class="radio-option"
-              ><input
-                type="radio"
-                name="campo57_radio"
-                value="Sem informação"
-              {{ isset($dados['campo57_radio']) && $dados['campo57_radio'] == 'Sem informação' ? 'checked' : '' }}>
-              Sem informação</label
-            >
+          <label>Há vinculação com o programa 'Imóvel da Gente'?</label>
+          <div class="radio-group" id="group-imovel-gente-radio">
+            <label class="radio-option"><input type="radio" name="vinculo_imovel_gente" value="Sim" onclick="document.getElementById('bloco-linha-programa').style.display='flex'"> Sim</label>
+            <label class="radio-option"><input type="radio" name="vinculo_imovel_gente" value="Não" onclick="document.getElementById('bloco-linha-programa').style.display='none'" checked> Não</label>
           </div>
-          <span class="error-msg" id="err57" style="display: none"
-            >Selecione uma opção.</span
-          >
-          <div id="group-campo57" style="display: none; margin-top: 8px">
-            <div class="checkbox-group" id="campo57-checks">
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Habitação"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Habitação', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Habitação</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Mobilidade Urbana"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Mobilidade Urbana', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Mobilidade Urbana</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Meio Ambiente"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Meio Ambiente', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Meio Ambiente</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Segurança Pública"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Segurança Pública', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Segurança Pública</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Defesa Nacional"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Defesa Nacional', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Defesa Nacional</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Saúde"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Saúde', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Saúde</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Política Nacional de Educação"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Política Nacional de Educação', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Política Nacional de Educação</label
-              >
-              <label class="checkbox-option"
-                ><input
-                  type="checkbox"
-                  name="campo57[]"
-                  value="Outra política pública"
-                  onchange="toggleObs57()"
-                {{ isset($dados['campo57']) && in_array('Outra política pública', (array)$dados['campo57']) ? 'checked' : '' }}>
-                Outra política pública (descrever nas observações)</label
-              >
-            </div>
-            <div id="bloco57_obs" style="display: none; margin-top: 8px">
-              <label for="campo57_obs">Especificar:</label>
-              <textarea
-                id="campo57_obs"
-                name="campo57_obs"
-                placeholder="Especifique as políticas vinculadas..."
-              >{{ $dados['campo57_obs'] ?? '' }}</textarea>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-group editavel">
-          <label
-            >Há expectativa de impacto social?
-            <span class="hint-semaforo"
-              ><span
-                class="hint-icon"
-                data-hint-tipo="verde"
-                data-hint="Avalie o impacto social esperado da destinação proposta para a populao beneficiada."
-                role="tooltip"
-                tabindex="0"
-                aria-label="Ajuda: Impacto social esperado"
-                >?</span
-              ></span
-            >
-          </label>
-          <div class="radio-group" id="group-campo58-radio">
-            <label class="radio-option"
-              ><input type="radio" name="campo58_radio" value="Sim" required {{ isset($dados['campo58_radio']) && $dados['campo58_radio'] == 'Sim' ? 'checked' : '' }}>
-              Sim</label
-            >
-            <label class="radio-option"
-              ><input type="radio" name="campo58_radio" value="Não" {{ isset($dados['campo58_radio']) && $dados['campo58_radio'] == 'Não' ? 'checked' : '' }}>
-              Não</label
-            >
-            <label class="radio-option"
-              ><input
-                type="radio"
-                name="campo58_radio"
-                value="Sem informação"
-              {{ isset($dados['campo58_radio']) && $dados['campo58_radio'] == 'Sem informação' ? 'checked' : '' }}>
-              Sem informação</label
-            >
-          </div>
-          <span class="error-msg" id="err58" style="display: none"
-            >Selecione uma opção.</span
-          >
-          <div id="group-campo58" style="display: none; margin-top: 8px">
-            <label for="campo58">Impacto:</label>
-            <select
-              id="campo58"
-              name="impacto_social"
-              data-no-custom
-              onchange="
-                toggleBloco(
-                  'bloco58_obs',
-                  this.value && this.value !== 'Não foi possível avaliar',
-                )
-              "
-             data-selected="{{ $dados['impacto_social'] ?? '' }}">
-              <option value="">Selecione...</option>
-              <option value="Alto impacto positivo">
-                Alto impacto positivo: benefício expressivo e direto para a
-                coletividade
-              </option>
-              <option value="Médio impacto positivo">
-                Médio impacto positivo: benefício moderado ou indireto para a
-                coletividade
-              </option>
-              <option value="Baixo impacto positivo">
-                Baixo impacto positivo: benefício restrito ou pouco expressivo
-              </option>
-              <option value="Sem impacto social relevante">
-                Sem impacto social relevante: destinação sem reflexo
-                significativo sobre a coletividade
-              </option>
-              <option value="Impacto social negativo">
-                Impacto social negativo: destinação pode gerar prejuízo social
-                identificado
-              </option>
-              <option value="Não foi possível avaliar">
-                Não foi possível avaliar: ausência de informações suficientes
-              </option>
+          <div id="bloco-linha-programa" style="display: none; margin-top: 8px; flex-direction: column; gap: 6px;">
+            <label for="linha_programa">Linha do Programa:</label>
+            <select id="linha_programa" name="linha_programa">
+              <option value="">Selecione a linha...</option>
+              <option value="LINHA 1 - HABITAÇÃO">LINHA 1 - HABITAÇÃO</option>
+              <option value="LINHA 2 – REURB">LINHA 2 – REURB</option>
+              <option value="LINHA 3 - POLÍT. PÚBLICAS">LINHA 3 - POLÍT. PÚBLICAS</option>
+              <option value="LINHA 4 - MÚLTIPLOS USOS">LINHA 4 - MÚLTIPLOS USOS</option>
             </select>
-            <div id="bloco58_obs" style="display: none; margin-top: 8px">
-              <label for="campo58_obs">Observações complementares:</label>
-              <textarea
-                id="campo58_obs"
-                name="impacto_social_obs"
-                placeholder="Observações sobre o impacto social esperado..."
-              >{{ $dados['impacto_social_obs'] ?? '' }}</textarea>
-            </div>
+          </div>
+        </div>
+
+        <div class="form-group editavel">
+          <label>Os beneficiários são famílias ou indivíduos?</label>
+          <div class="radio-group">
+            <label class="radio-option"><input type="radio" name="tipo_beneficiario" value="Famílias"> Famílias</label>
+            <label class="radio-option"><input type="radio" name="tipo_beneficiario" value="Indivíduos"> Indivíduos</label>
+            <label class="radio-option"><input type="radio" name="tipo_beneficiario" value="Não há informação"> Não há informação</label>
           </div>
         </div>
 
         <div class="form-group editavel">
           <label for="campo59"
-            >Número estimado de beneficiários em potencial:
+            >Número estimado de beneficiários:
             <span class="hint-semaforo"
               ><span
                 class="hint-icon"
@@ -1960,93 +1677,11 @@
             placeholder="0"
             min="0"
             autocomplete="off"
-            required
             value="{{ $dados['num_beneficiarios'] ?? '' }}"
           />
           <span class="error-msg" id="err59" style="display: none"
             >Informe o nmero de beneficirios (mnimo 0).</span
           >
-        </div>
-
-        <div class="form-group editavel">
-          <label
-            >Há expectativa de impacto ambiental?
-            <span class="hint-semaforo"
-              ><span
-                class="hint-icon"
-                data-hint-tipo="verde"
-                data-hint="Avalie o impacto ambiental esperado da destinação proposta sobre o meio ambiente local e regional."
-                role="tooltip"
-                tabindex="0"
-                aria-label="Ajuda: Impacto ambiental esperado"
-                >?</span
-              ></span
-            >
-          </label>
-          <div class="radio-group" id="group-campo510-radio">
-            <label class="radio-option"
-              ><input type="radio" name="campo510_radio" value="Sim" required {{ isset($dados['campo510_radio']) && $dados['campo510_radio'] == 'Sim' ? 'checked' : '' }}>
-              Sim</label
-            >
-            <label class="radio-option"
-              ><input type="radio" name="campo510_radio" value="Não" {{ isset($dados['campo510_radio']) && $dados['campo510_radio'] == 'Não' ? 'checked' : '' }}>
-              Não</label
-            >
-            <label class="radio-option"
-              ><input
-                type="radio"
-                name="campo510_radio"
-                value="Sem informação"
-              {{ isset($dados['campo510_radio']) && $dados['campo510_radio'] == 'Sem informação' ? 'checked' : '' }}>
-              Sem informação</label
-            >
-          </div>
-          <span class="error-msg" id="err510" style="display: none"
-            >Selecione uma opção.</span
-          >
-          <div id="group-campo510" style="display: none; margin-top: 8px">
-            <label for="campo510">Impacto:</label>
-            <select
-              id="campo510"
-              name="impacto_ambiental"
-              data-no-custom
-              onchange="
-                toggleBloco(
-                  'bloco510_obs',
-                  this.value && this.value !== 'Não foi possível avaliar',
-                )
-              "
-             data-selected="{{ $dados['impacto_ambiental'] ?? '' }}">
-              <option value="">Selecione...</option>
-              <option value="Impacto positivo">
-                Impacto positivo: destinação contribui para recuperação ou
-                preservação ambiental
-              </option>
-              <option value="Sem impacto ambiental relevante">
-                Sem impacto ambiental relevante: destinação não altera
-                significativamente o meio ambiente
-              </option>
-              <option value="Impacto negativo mitigável">
-                Impacto negativo mitigável: impacto identificado, passível de
-                controle por medidas mitigadoras
-              </option>
-              <option value="Impacto negativo relevante">
-                Impacto negativo relevante: impacto significativo com
-                necessidade de licenciamento ambiental
-              </option>
-              <option value="Não foi possível avaliar">
-                Não foi possível avaliar: ausência de informações suficientes
-              </option>
-            </select>
-            <div id="bloco510_obs" style="display: none; margin-top: 8px">
-              <label for="campo510_obs">Observações complementares:</label>
-              <textarea
-                id="campo510_obs"
-                name="impacto_ambiental_obs"
-                placeholder="Observações sobre o impacto ambiental esperado..."
-              >{{ $dados['impacto_ambiental_obs'] ?? '' }}</textarea>
-            </div>
-          </div>
         </div>
 
         <div class="form-group editavel">
@@ -2682,29 +2317,18 @@
 
         // Carregar ações judiciais da tabela_acoes
         (async function () {
-          const rip =
-            localStorage.getItem("CURRENT_PROCESS_ID") || window.processId;
-          console.log(
-            `[foco-03] RIP para ações: "${rip}", fetchAcoes existe: ${typeof window.fetchAcoes}`,
-          );
-          if (!rip || typeof window.fetchAcoes !== "function") {
-            console.warn("[foco-03] RIP ou fetchAcoes não disponível");
-            return;
-          }
-          try {
-            const acoes = await window.fetchAcoes(rip);
-            console.log("[foco-03] Resultado fetchAcoes:", acoes);
-            if (acoes) {
-              document.getElementById("nup_sei").value = acoes.nup_sei || "";
-              document.getElementById("tipo_processo").value =
-                acoes.tipo_processo || "";
-              document.getElementById("resumo_acao").value = acoes.resumo || "";
-              document.getElementById("descricao_acao").value =
-                acoes.descricao || "";
-            }
-          } catch (e) {
-            console.error("[foco-03] Erro ao carregar ações:", e);
-          }
+          // Mock manual solicitado pelo usuário
+          const mockAcoes = {
+            nup_sei: "90849.008382/2026-88",
+            tipo_processo: "Ação Civil Pública",
+            resumo: "ACP da Associação Quilombola Kulumbu do Patuazinho busca proteção territorial e conclusão da regularização fundiária.",
+            descricao: "Trata-se de Ação Civil Pública ajuizada pela Associação Quilombola Kulumbu do Patuazinho em face da União, do Instituto Nacional de Colonização e Reforma Agrária (INCRA) e da Fundação Cultural Palmares, visando à proteção territorial, cultural e ambiental da comunidade quilombola, bem como à conclusão do procedimento administrativo de regularização fundiária (Processo INCRA nº 54350.000408/2010-11)."
+          };
+
+          document.getElementById("nup_sei").value = mockAcoes.nup_sei;
+          document.getElementById("tipo_processo").value = mockAcoes.tipo_processo;
+          document.getElementById("resumo_acao").value = mockAcoes.resumo;
+          document.getElementById("descricao_acao").value = mockAcoes.descricao;
         })();
 
         // Carregar dados de contratos anteriores da tabela_spu
@@ -2834,10 +2458,6 @@
           .getElementById("campo51")
           .addEventListener("change", function () {
             toggleBloco("bloco51_obs", !!this.value);
-            toggleBloco(
-              "bloco_contratos_anteriores",
-              this.value === "Renovação/alteração contratual",
-            );
             limparErro(this, "err51");
           });
 

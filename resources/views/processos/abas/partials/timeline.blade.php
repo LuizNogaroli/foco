@@ -341,20 +341,7 @@ iframe.resumo-frame { width: 100%; height: 72vh; min-height: 520px; border: none
                                 <strong>Registro:</strong> 👤 {{ $dadosSnapshot['assinatura_'.$prefix.'_nome'] }} &mdash; 🕒 {{ $dadosSnapshot['assinatura_'.$prefix.'_data'] ?? $dataAcao }}
                             </div>
                             <div class="decl-assinado-overlay visivel" style="display:block; margin-top:0; border-color:#5eead4; background:#ccfbf1;">
-                                <strong style="color:#0f766e;">✔ Manifestação registrada</strong><br>
-                                @if($prefix === 'superintendencia')
-                                    Deliberação: {{ ucfirst(str_replace('_', ' ', $dadosSnapshot['sup_deliberacao'] ?? '')) }}<br>
-                                    @if(($dadosSnapshot['sup_regime_concorda'] ?? '') === 'nao')
-                                        Regime sugerido: {{ $dadosSnapshot['sup_regime_novo'] ?? 'Nenhum' }}<br>
-                                    @endif
-                                    Observações: {{ $dadosSnapshot['obs_superintendencia'] ?? 'Nenhuma observação' }}
-                                @elseif($prefix === 'cde')
-                                    Deliberação: {{ ucfirst(str_replace('_', ' ', $dadosSnapshot['cde_deliberacao'] ?? '')) }}<br>
-                                    Observações: {{ $dadosSnapshot['obs_cde'] ?? 'Nenhuma observação' }}
-                                @else
-                                    Parecer: {{ ($dadosSnapshot['decl_'.$prefix.'_opcao'] ?? '') == 'suficiente' ? 'Suficiente' : 'Insuficiente' }}<br>
-                                    Observações: {{ $dadosSnapshot['obs_'.$prefix] ?? 'Nenhuma observação' }}
-                                @endif
+                                @include('processos.abas.partials.carimbo_manifestacao', ['dadosSnapshot' => $dadosSnapshot, 'prefix' => $prefix])
                             </div>
                         </div>
                     </div>

@@ -838,18 +838,19 @@ const CAMPOS_COM_OPCOES = {
         'Sem informação'
     ],
     'tipo_imovel': [
-        'Casa',
-        'Conjunto habitacional',
-        'Galpão',
-        'Garagem',
-        'Prédio',
-        'Sala/Conjunto',
-        'Terreno',
-        'Não se aplica'
+        'Lote/Terreno',
+        'Gleba',
+        'Ilha',
+        'Outros'
     ],
     'natureza': [
         'Urbano',
         'Rural'
+    ],
+    'classificacao': [
+        'Dominial',
+        'Especial',
+        'Uso Comum'
     ],
     'lpm_homologada': [
         'Sim',
@@ -1088,6 +1089,7 @@ window.carregarCamposRIP = async function(rip) {
         'condicao_urbanizacao':       'condicao_urbanizacao',
         'natureza_terreno':           'natureza',
         'tipo_imovel':                'tipo_imovel',
+        'classificacao':              'classificacao',
         'cep':                        'cep',
         'uf':                         'uf',
         'municipio':                  'municipio',

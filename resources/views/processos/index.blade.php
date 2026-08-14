@@ -362,8 +362,8 @@
                                 @else
                                     <span style="display: inline-block; width: 32px; text-align: center; color: #cbd5e1;" title="Ação indisponível neste status">─</span>
                                 @endif
-                                <a href="{{ route('processos.historico.escolha', $proc->id) }}" class="btn-action" title="Visualizar Histórico" style="display: flex; align-items: center; padding: 4px; border: none; outline: none; text-decoration: none;">
-                                    <img src="{{ asset('images/icon-eye.svg') }}" width="24" height="24" alt="Histórico">
+                                <a href="{{ route('processos.historico.modelo-e', $proc->id) }}" class="btn-action" title="Visualizar Modelo E" style="display: flex; align-items: center; padding: 4px; border: none; outline: none; text-decoration: none;">
+                                    <img src="{{ asset('images/icon-eye.svg') }}" width="24" height="24" alt="Visualizar Modelo E">
                                 </a>
                             </div>
                         </td>

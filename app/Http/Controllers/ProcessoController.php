@@ -47,7 +47,7 @@ class ProcessoController extends Controller
             'Deliberação - Superintendência' => ['aba' => 7, 'status' => null],
             'Deliberação Superintendência' => ['aba' => 7, 'status' => null],
             
-            'Validação - Equipe C.G.' => ['aba' => 7, 'status' => null],
+            'Conformidade Prévia' => ['aba' => 7, 'status' => null],
             'Conferência análise de viabilidade' => ['aba' => 7, 'status' => null],
             
             'Validação - Coordenação-Geral' => ['aba' => 7, 'status' => null],
@@ -66,7 +66,7 @@ class ProcessoController extends Controller
     private function perfilPodeOperar(string $status, string $perfil): bool
     {
         $simulado = request()->cookie('perfil_simulado');
-        if ($simulado === 'ALL' || (auth()->user() && auth()->user()->hasRole('Administrador'))) {
+        if ($simulado === 'ALL' || $perfil === 'ALL' || (auth()->user() && auth()->user()->hasRole('Administrador'))) {
             return true;
         }
 
@@ -94,7 +94,7 @@ class ProcessoController extends Controller
             'Deliberação - Superintendência' => ['Superintendência'],
             'Deliberação Superintendência' => ['Superintendência'],
             
-            'Validação - Equipe C.G.' => ['Equipe C.G.'],
+            'Conformidade Prévia' => ['Equipe C.G.'],
             'Conferência análise de viabilidade' => ['Equipe C.G.'],
             
             'Validação - Coordenação-Geral' => ['Coordenação-Geral'],
@@ -230,12 +230,11 @@ class ProcessoController extends Controller
             'Aguardando Análise',
             'Indicação do Imóvel',
             'Diagnóstico do Imóvel',
-            'Diagnóstico do Imóvel',
             'Análise de Viabilidade',
             'Validação - Chefia',
             'Validação - Coordenação',
             'Deliberação - Superintendência',
-            'Validação - Equipe C.G.',
+            'Conformidade Prévia',
             'Validação - Coordenação-Geral',
             'Validação - Direção',
             'Deliberação - CDE',
@@ -625,6 +624,35 @@ class ProcessoController extends Controller
                         'observacoes_aba2' => $validatedData['observacoes_aba2'] ?? null,
                     ]
                 );
+                if (isset($validatedData['rips_vinculados'])) {
+                    $ripsVinculados = is_array($validatedData['rips_vinculados'])
+                        ? $validatedData['rips_vinculados']
+                        : json_decode($validatedData['rips_vinculados'], true) ?? [];
+                    foreach ($ripsVinculados as $ripRaw) {
+                        if (is_string($ripRaw)) {
+                            $clean = html_entity_decode($ripRaw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                            $decoded = json_decode($clean, true);
+                            $ripData = is_array($decoded) ? $decoded : ['numero_rip' => trim($clean)];
+                        } else {
+                            $ripData = $ripRaw;
+                        }
+                        if (!empty($ripData) && isset($ripData['numero_rip'])) {
+                            $foco->rips()->updateOrCreate(
+                                [
+                                    'foco_cadastro_minimo_id' => $ripData['foco_cadastro_minimo_id'] ?? null,
+                                    'numero_rip' => $ripData['numero_rip'],
+                                ],
+                                [
+                                    'foco_id' => $foco->id,
+                                    'destinacao_terreno' => $ripData['destinacao_terreno'] ?? null,
+                                    'area_terreno_parcial' => $ripData['area_terreno_parcial'] ?? null,
+                                    'destinacao_imovel' => $ripData['destinacao_imovel'] ?? null,
+                                    'area_imovel_parcial' => $ripData['area_imovel_parcial'] ?? null,
+                                ]
+                            );
+                        }
+                    }
+                }
                 $processo->status_atual = 'Análise de Viabilidade';
 
             } elseif ($effectiveAba == '3') {
@@ -652,20 +680,14 @@ class ProcessoController extends Controller
                     'campo54' => $validatedData['campo54'] ?? null,
                     'campo54_desc' => $validatedData['campo54_desc'] ?? null,
                     'compatibilidade_urbanistica' => $validatedData['compatibilidade_urbanistica'] ?? null,
-                    'campo55_obs' => $validatedData['campo55_obs'] ?? null,
                     'campo56_radio' => $validatedData['campo56_radio'] ?? null,
-                    'campo56' => $validatedData['campo56'] ?? null,
-                    'campo56_obs' => $validatedData['campo56_obs'] ?? null,
-                    'campo57_radio' => $validatedData['campo57_radio'] ?? null,
-                    'campo57' => $validatedData['campo57'] ?? null,
-                    'campo57_obs' => $validatedData['campo57_obs'] ?? null,
+                    'linha_programa' => $validatedData['linha_programa'] ?? null,
                     'campo58_radio' => $validatedData['campo58_radio'] ?? null,
+
                     'impacto_social' => $validatedData['impacto_social'] ?? null,
                     'impacto_social_obs' => $validatedData['impacto_social_obs'] ?? null,
+                    'tipo_beneficiario' => $validatedData['tipo_beneficiario'] ?? null,
                     'num_beneficiarios' => $validatedData['num_beneficiarios'] ?? null,
-                    'campo510_radio' => $validatedData['campo510_radio'] ?? null,
-                    'impacto_ambiental' => $validatedData['impacto_ambiental'] ?? null,
-                    'impacto_ambiental_obs' => $validatedData['impacto_ambiental_obs'] ?? null,
                     'regime_destinacao' => $validatedData['regime_destinacao'] ?? null,
                     'campo511_obs' => $validatedData['campo511_obs'] ?? null,
                 ];
@@ -691,6 +713,9 @@ class ProcessoController extends Controller
                     if (empty($opcao)) {
                         return back()->withErrors(['decl_chefia_opcao' => 'É obrigatório selecionar uma das opções (Suficiente ou Insuficiente) antes de enviar.'])->withInput();
                     }
+                    if ($opcao === 'insuficiente' && empty($request->input('obs_chefia'))) {
+                        return back()->withErrors(['obs_chefia' => 'O campo observações é obrigatório quando os elementos forem insuficientes para apreciação.'])->withInput();
+                    }
                     if ($opcao === 'suficiente') {
                         $processo->status_atual = 'Validação - Coordenação';
                     } elseif ($opcao === 'insuficiente') {
@@ -701,6 +726,9 @@ class ProcessoController extends Controller
                     $opcao = $request->input('decl_coordenacao_opcao');
                     if (empty($opcao)) {
                         return back()->withErrors(['decl_coordenacao_opcao' => 'É obrigatório selecionar uma das opções (Suficiente ou Insuficiente) antes de enviar.'])->withInput();
+                    }
+                    if ($opcao === 'insuficiente' && empty($request->input('obs_coordenacao'))) {
+                        return back()->withErrors(['obs_coordenacao' => 'O campo observações é obrigatório quando os elementos forem insuficientes para apreciação.'])->withInput();
                     }
                     if ($opcao === 'suficiente') {
                         $processo->status_atual = 'Deliberação - Superintendência';
@@ -722,11 +750,11 @@ class ProcessoController extends Controller
                     $processo->tramitacao = 'Devolvido';
                 } else {
                     // Favorável ou Favorável com ressalvas
-                    if ($sup_competencia === 'somente_superintendencia') {
+                    if ($sup_competencia === 'nao') {
                         $processo->status_atual = 'Deliberado - SPU/UF';
                     } else {
-                        // precisa_cde ou cde
-                        $processo->status_atual = 'Validação - Equipe C.G.';
+                        // sim
+                        $processo->status_atual = 'Conformidade Prévia';
                     }
                 }
 
@@ -738,25 +766,25 @@ class ProcessoController extends Controller
                 $processo->status_atual = 'Validação - Coordenação-Geral';
 
             } elseif ($acao === 'coordenacao_geral') {
-                $opcao = $request->input('decl_coordenacao_geral_opcao');
-                if ($opcao === 'suficiente') {
+                $conclusao = $request->input('decl_coordenacao_geral_conclusao');
+                if (empty($conclusao)) {
+                    return back()->withErrors(['decl_coordenacao_geral_conclusao' => 'É obrigatório selecionar a conclusão (apta ou inapta para a CDE) antes de enviar.'])->withInput();
+                }
+                if ($conclusao === 'apta_cde') {
                     $processo->status_atual = 'Validação - Direção';
-                } elseif ($opcao === 'insuficiente') {
-                    if (empty($request->input('obs_coordenacao_geral'))) {
-                        return back()->withErrors(['obs_coordenacao_geral' => 'O campo observações é obrigatório para devolver o processo.'])->withInput();
-                    }
+                } elseif ($conclusao === 'inapta_cde') {
                     $processo->status_atual = 'Análise de Viabilidade';
                     $processo->tramitacao = 'Devolvido';
                 }
 
             } elseif ($acao === 'direcao') {
                 $opcao = $request->input('decl_direcao_opcao');
-                if ($opcao === 'suficiente') {
+                if (empty($opcao)) {
+                    return back()->withErrors(['decl_direcao_opcao' => 'É obrigatório selecionar uma das opções da manifestação antes de enviar.'])->withInput();
+                }
+                if ($opcao === 'apta_cde') {
                     $processo->status_atual = 'Deliberação - CDE';
-                } elseif ($opcao === 'insuficiente') {
-                    if (empty($request->input('obs_direcao'))) {
-                        return back()->withErrors(['obs_direcao' => 'O campo observações é obrigatório para devolver o processo.'])->withInput();
-                    }
+                } elseif ($opcao === 'restituir_spuf' || $opcao === 'diligencia') {
                     $processo->status_atual = 'Validação - Coordenação-Geral';
                     $processo->tramitacao = 'Devolvido';
                 }
@@ -970,7 +998,7 @@ class ProcessoController extends Controller
     private function getStatusesDoPerfil(string $perfil): array
     {
         $simulado = request()->cookie('perfil_simulado');
-        if ($simulado === 'ALL' || (auth()->user() && auth()->user()->hasRole('Administrador'))) {
+        if ($simulado === 'ALL' || $perfil === 'ALL' || (auth()->user() && auth()->user()->hasRole('Administrador'))) {
             return [
                 'Aguardando Análise', 'Aguardando análise',
                 'Indicação do Imóvel', 'Indicação do imóvel',
@@ -980,7 +1008,7 @@ class ProcessoController extends Controller
                 'Validação - Chefia', 'Validação análise de viabilidade - Chefia',
                 'Validação - Coordenação', 'Validação análise de viabilidade - Coordenação',
                 'Deliberação - Superintendência', 'Deliberação Superintendência',
-                'Validação - Equipe C.G.', 'Conferência análise de viabilidade',
+                'Conformidade Prévia', 'Conferência análise de viabilidade',
                 'Validação - Coordenação-Geral', 'Validação análise de viabilidade - Coordenação-Geral',
                 'Validação - Direção', 'Validação conferência',
                 'Deliberação - CDE', 'Manifestação CDE',
@@ -1011,7 +1039,7 @@ class ProcessoController extends Controller
                 'Deliberado - SPU/UF', 'Indeferido - SPU/UF'
             ],
             'Equipe C.G.' => [
-                'Validação - Equipe C.G.', 'Conferência análise de viabilidade',
+                'Conformidade Prévia', 'Conferência análise de viabilidade',
             ],
             'Coordenação-Geral' => [
                 'Validação - Coordenação-Geral', 'Validação análise de viabilidade - Coordenação-Geral',
@@ -1229,7 +1257,7 @@ class ProcessoController extends Controller
             'Validação - Chefia' => 'Chefia',
             'Validação - Coordenação' => 'Coordenação',
             'Deliberação - Superintendência' => 'Superintendência',
-            'Validação - Equipe C.G.' => 'Equipe C.G.',
+            'Conformidade Prévia' => 'Equipe C.G.',
             'Validação - Coordenação-Geral' => 'Coordenação-Geral',
             'Validação - Direção' => 'Direção',
             'Deliberação - CDE' => 'CDE',

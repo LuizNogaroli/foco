@@ -1,0 +1,656 @@
+<link rel="stylesheet" href="{{ asset('css/report.css') }}">
+<style>
+.acordeao-wrapper {
+  margin-bottom: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.acordeao-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 12px 16px;
+  background: #1e3a5f;
+  cursor: pointer;
+  user-select: none;
+  gap: 10px;
+  transition: background 0.2s;
+}
+.acordeao-header:hover { background: #2d5282; }
+.acordeao-titulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 1.1em;
+  color: #ffffff;
+  flex: 1;
+}
+.acordeao-seta { font-size: 0.85em; color: #ffffff; transition: transform 0.25s; flex-shrink: 0; }
+.acordeao-wrapper.aberto .acordeao-seta { transform: rotate(90deg); }
+.acordeao-corpo { display: none; padding: 20px 20px 24px; background: #fff; border-top: 1px solid #e2e8f0; }
+.acordeao-wrapper.aberto .acordeao-corpo { display: block; }
+.acordeao-corpo fieldset { border: none; padding: 0; margin: 0; }
+.decl-opcao-btns { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 6px; }
+.decl-opcao-btns > input[type="radio"] { display: none; }
+.decl-opcao-btn-label { display: flex; align-items: flex-start; gap: 12px; padding: 11px 14px; border: none; border-radius: 7px; cursor: pointer; background: #f8fafc; transition: 0.18s; font-size: 0.93em; color: #1e293b; line-height: 1.5; }
+.decl-opcao-btn-label:hover { background: #eff6ff; }
+.opcao-icone { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; border: 2px solid #94a3b8; background: #fff; display: flex; align-items: center; justify-content: center; transition: 0.18s; margin-top: 1px; font-size: 0.75em; color: transparent; }
+.decl-opcao-btns > input[type="radio"]:checked + .decl-opcao-btn-label { border-color: #1e3a5f; background: #eff6ff; box-shadow: 0 0 0 3px rgba(30,58,95,0.10); font-weight: 500; }
+.decl-opcao-btns > input[type="radio"]:checked + .decl-opcao-btn-label .opcao-icone { border-color: #1e3a5f; background: #1e3a5f; color: #fff; }
+.decl-obs-group { margin-top: 16px; }
+.decl-obs-group label { display: block; font-size: 0.92em; font-weight: 600; color: #374151; margin-bottom: 5px; }
+.decl-obs-group textarea { width: 100%; min-height: 80px; border: none; background: #f1f5f9; border-radius: 5px; padding: 10px; font-size: 0.91em; resize: vertical; color: #1e293b; outline: none; }
+.decl-obs-group textarea:focus { box-shadow: 0 0 0 2px #cbd5e1; }
+.decl-btn-assinar { margin-top: 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn-assinar { padding: 8px 22px; background: #1e3a5f; color: #fff; border: none; border-radius: 5px; font-size: 0.93em; font-weight: 600; cursor: pointer; transition: 0.2s; }
+.btn-assinar:hover:not(:disabled) { background: #2d5282; }
+.btn-assinar:disabled { background: #94a3b8; cursor: not-allowed; }
+.decl-assinado-overlay { display: none; background: #f0fdf4; border: 1px solid #86efac; border-radius: 5px; padding: 14px 16px; margin-top: 16px; font-size: 0.91em; color: #15803d; line-height: 1.7; }
+.decl-assinado-overlay.visivel { display: block; }
+.decl-info-nota { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 5px; padding: 10px 14px; font-size: 0.88em; color: #1e40af; margin-bottom: 14px; line-height: 1.5; }
+.secao-ativa { border: 2px solid #2563eb !important; }
+.secao-ativa .acordeao-header { background: #dbeafe !important; color: #1e3a5f !important; }
+.secao-ativa .acordeao-titulo { color: #1e3a5f !important; }
+.secao-ativa .acordeao-seta { color: #1e3a5f !important; }
+.decl-origem-stamp {
+    background: #f1f5f9;
+    border-left: 4px solid #2563eb;
+    padding: 10px 14px;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    color: #0f172a;
+    font-weight: 600;
+    border-radius: 0 6px 6px 0;
+}
+.decl-section-title {
+    font-weight: 700;
+    font-size: 0.98em;
+    color: #1e3a5f;
+    margin: 20px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.decl-sublabel { font-weight: 600; font-size: 0.92em; color: #1e3a5f; margin: 16px 0 4px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
+.decl-bloco-condicional { display: none; }
+.decl-bloco-condicional.visivel { display: block; }
+.acordeao-badge-ok {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 0.82em;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid #86efac;
+  white-space: nowrap;
+  margin-right: 50px;
+}
+.acordeao-badge-ok.visivel { display: flex; }
+.acordeao-badge-pendente {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.82em;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  border: 1px solid #fde68a;
+  white-space: nowrap;
+  margin-right: 50px;
+}
+.acordeao-badge-pendente.oculto { display: none; }
+</style>
+
+<div class="form-container">
+    <h2>Manifestações</h2>
+
+    @if($errors->any())
+        <div style="background-color: #fee2e2; color: #991b1b; padding: 15px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ef4444;">
+            <strong>Atenção:</strong>
+            <ul style="margin-top: 8px; margin-bottom: 0;">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+
+    {{-- RESUMO DAS ABAS ANTERIORES --}}
+    <div style="margin-bottom: 30px;">
+      <h3 style="color: #1e3a5f; margin-bottom: 20px; font-weight: 700;">Resumo dos Dados do Processo</h3>
+
+      @if(!empty($dados1) || !empty($dados2) || !empty($dados3))
+        @if(!empty($dados1))
+        <div class="acordeao-wrapper">
+          <div class="acordeao-header" onclick="this.parentElement.classList.toggle('aberto')" style="background: #1e3a5f;">
+            <div class="acordeao-titulo">📋 Dados do Requerimento</div>
+            <span class="acordeao-seta">▶</span>
+          </div>
+          <div class="acordeao-corpo" style="padding: 15px; background: #fff;">
+            <div class="report-container">
+              @include('processos.abas.resumos.aba1a')
+            </div>
+          </div>
+        </div>
+
+        <div class="acordeao-wrapper">
+          <div class="acordeao-header" onclick="this.parentElement.classList.toggle('aberto')" style="background: #1e3a5f;">
+            <div class="acordeao-titulo">📋 RIP(s) ou Cadastro(s) Mínimo(s)</div>
+            <span class="acordeao-seta">▶</span>
+          </div>
+          <div class="acordeao-corpo" style="padding: 15px; background: #fff;">
+            <div class="report-container">
+              @include('processos.abas.resumos.aba1b')
+            </div>
+          </div>
+        </div>
+        @endif
+
+        @if(!empty($dados2))
+        <div class="acordeao-wrapper">
+          <div class="acordeao-header" onclick="this.parentElement.classList.toggle('aberto')" style="background: #1e3a5f;">
+            <div class="acordeao-titulo">📋 Diagnóstico preliminar do imóvel</div>
+            <span class="acordeao-seta">▶</span>
+          </div>
+          <div class="acordeao-corpo" style="padding: 15px; background: #fff;">
+            <div class="report-container">
+              @include('processos.abas.resumos.aba2')
+            </div>
+          </div>
+        </div>
+        @endif
+
+        @if(!empty($dados3))
+        <div class="acordeao-wrapper">
+          <div class="acordeao-header" onclick="this.parentElement.classList.toggle('aberto')" style="background: #1e3a5f;">
+            <div class="acordeao-titulo">📋 Análise de Viabilidade</div>
+            <span class="acordeao-seta">▶</span>
+          </div>
+          <div class="acordeao-corpo" style="padding: 15px; background: #fff;">
+            <div class="report-container">
+              <h4 style="margin-top: 0; color: #1e3a5f; font-size: 1.1em; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 15px;">Análise do Destinatário</h4>
+              @include('processos.abas.resumos.aba3_analise')
+
+              <h4 style="margin-top: 25px; color: #1e3a5f; font-size: 1.1em; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 15px;">Proposta de Destinação</h4>
+              @include('processos.abas.resumos.aba3_proposta')
+            </div>
+          </div>
+        </div>
+        @endif
+      @else
+        <div style="text-align:center; padding:30px; color:#64748b; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">
+          Nenhum dado das abas anteriores foi encontrado. Preencha as abas 1, 2 ou 3 primeiro.
+        </div>
+      @endif
+    </div>
+    {{-- FIM RESUMO DAS ABAS ANTERIORES --}}
+
+
+    <form action="{{ route('processos.tramitar', $processo->id) }}" method="POST" hx-post="{{ route('processos.tramitar', $processo->id) }}" hx-target="#aba7-container" hx-indicator="#form-indicator" id="form07">
+        @csrf
+        <div id="form-indicator" class="htmx-indicator" style="display:none; color: #475569; margin-bottom: 10px;">⏳ Processando...</div>
+        <input type="hidden" name="next_aba" value="index">
+
+        @php
+            $status = $processo->status_atual;
+
+            // Determinar qual secao esta ativa
+            $secoes = [
+                'chefia' => ['status' => 'Validação - Chefia', 'perfil' => 'Chefia', 'label' => 'Chefia', 'assinatura' => 'assinatura_chefia'],
+                'coordenacao' => ['status' => 'Validação - Coordenação', 'perfil' => 'Coordenação', 'label' => 'Coordenação SPU/UF', 'assinatura' => 'assinatura_coordenacao'],
+                'superintendencia' => ['status' => 'Deliberação - Superintendência', 'perfil' => 'Superintendência', 'label' => 'Superintendência', 'assinatura' => 'assinatura_superintendencia'],
+                'equipe_cg' => ['status' => 'Conformidade Prévia', 'perfil' => 'Equipe C.G.', 'label' => 'Equipe C.G.', 'assinatura' => 'assinatura_equipe_cg'],
+                'coordenacao_geral' => ['status' => 'Validação - Coordenação-Geral', 'perfil' => 'Coordenação-Geral', 'label' => 'Coordenação-Geral', 'assinatura' => 'assinatura_coordenacao_geral'],
+                'direcao' => ['status' => 'Validação - Direção', 'perfil' => 'Direção', 'label' => 'Direção', 'assinatura' => 'assinatura_direcao'],
+                'cde' => ['status' => 'Deliberação - CDE', 'perfil' => 'CDE', 'label' => 'CDE', 'assinatura' => 'assinatura_cde'],
+            ];
+
+            $chaveAtiva = null;
+            foreach ($secoes as $chave => $s) {
+                if ($s['status'] === $status) {
+                    $chaveAtiva = $chave;
+                    break;
+                }
+            }
+        @endphp
+
+        {{-- SECAO ATIVA --}}
+        @foreach($secoes as $chave => $s)
+            @if($chave === $chaveAtiva || isset($dados[$s['assinatura'] . '_nome']))
+            <div class="acordeao-wrapper {{ $chave === $chaveAtiva ? 'aberto secao-ativa' : '' }}" id="acordeao-{{ strtoupper(substr($chave, 0, 1)) }}">
+                <div class="acordeao-header" onclick="this.parentElement.classList.toggle('aberto')">
+                    <div class="acordeao-titulo">📋 {{ $s['label'] }}</div>
+                    @if(isset($dados[$s['assinatura'] . '_nome']))
+                        <span class="acordeao-badge-ok visivel">✔ Concluído</span>
+                    @else
+                        <span class="acordeao-badge-pendente">⏳ Pendente</span>
+                    @endif
+                    <span class="acordeao-seta">▶</span>
+                </div>
+
+                <div class="acordeao-corpo">
+                    @php
+                        $origemTextoAtiva = null;
+                        $map = [
+                            'coordenacao' => ['assinatura' => 'assinatura_chefia', 'label' => 'Chefia'],
+                            'superintendencia' => ['assinatura' => 'assinatura_coordenacao', 'label' => 'Coordenação SPU/UF'],
+                            'equipe_cg' => ['assinatura' => 'assinatura_superintendencia', 'label' => 'Superintendência'],
+                            'coordenacao_geral' => ['assinatura' => 'assinatura_equipe_cg', 'label' => 'Equipe C.G.'],
+                            'direcao' => ['assinatura' => 'assinatura_coordenacao_geral', 'label' => 'Coordenação-Geral'],
+                            'cde' => ['assinatura' => 'assinatura_superintendencia', 'label' => 'Superintendência'],
+                        ];
+                        
+                        if (isset($map[$chave])) {
+                            if ($chave === 'cde' && isset($dados['assinatura_direcao_data'])) {
+                                $origemTextoAtiva = "Encaminhado por Direção em " . $dados['assinatura_direcao_data'];
+                            } else {
+                                $ant = $map[$chave];
+                                if (isset($dados[$ant['assinatura'] . '_data'])) {
+                                    $origemTextoAtiva = "Encaminhado por " . $ant['label'] . " em " . $dados[$ant['assinatura'] . '_data'];
+                                }
+                            }
+                        }
+                    @endphp
+
+                    @if($origemTextoAtiva)
+                    <div class="decl-origem-stamp">
+                        {{ $origemTextoAtiva }}
+                    </div>
+                    @endif
+
+                    <div class="decl-info-nota" style="margin-bottom: 15px;">
+                        Verifique o histórico acima antes de emitir sua manifestação.
+                    </div>
+
+                    @if(isset($dados[$s['assinatura'] . '_nome']))
+                        {{-- JA ASSINADO --}}
+                        <div class="decl-assinado-overlay visivel" style="display:block; margin-bottom: 20px; padding: 15px; border-radius: 6px; background-color: #f0fdf4; border: 1px solid #bbf7d0;">
+                            <strong>✔ Manifestação registrada</strong><br>
+                            Assinado por: {{ $dados[$s['assinatura'] . '_nome'] }} em {{ $dados[$s['assinatura'] . '_data'] }}
+                        </div>
+                    @endif
+                    
+                    {{-- FORMULARIO --}}
+                    <fieldset @if(isset($dados[$s['assinatura'] . '_nome']) || ($perfil !== 'ALL' && $s['perfil'] !== $perfil)) disabled @endif>
+                        
+                        @if($chave === 'superintendencia')
+                            {{-- FORMULARIO DA SUPERINTENDENCIA --}}
+
+                            {{-- Regime de destinação --}}
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title">Regime de destinação</div>
+                                <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;">
+                                    ℹ Regime proposto pelo analista: <strong>{{ $dados3['regime_destinacao'] ?? ($dados3['proposta_destinacao']['regime_destinacao'] ?? 'Não informado') }}</strong>
+                                </div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="sup_regime_concorda" id="sup-reg-sim" value="sim" {{ ($dados['sup_regime_concorda'] ?? '') == 'sim' ? 'checked' : '' }} onchange="toggleRegimeDropdown()">
+                                    <label class="decl-opcao-btn-label" for="sup-reg-sim"><span class="opcao-icone">✔</span><span>Concordo.</span></label>
+
+                                    <input type="radio" name="sup_regime_concorda" id="sup-reg-nao" value="nao" {{ ($dados['sup_regime_concorda'] ?? '') == 'nao' ? 'checked' : '' }} onchange="toggleRegimeDropdown()">
+                                    <label class="decl-opcao-btn-label" for="sup-reg-nao"><span class="opcao-icone">✔</span><span>Não concordo.</span></label>
+                                </div>
+                                
+                                <div id="div-regime-sugerido" style="display: {{ ($dados['sup_regime_concorda'] ?? '') == 'nao' ? 'block' : 'none' }}; margin-top: 10px;">
+                                    <label class="decl-sublabel">Selecione o regime de destinação desejado:</label>
+                                    <select name="sup_regime_novo" class="form-control" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                        <option value="">Selecione...</option>
+                                        <option value="Aforamento" {{ ($dados['sup_regime_novo'] ?? '') == 'Aforamento' ? 'selected' : '' }}>Aforamento</option>
+                                        <option value="Alienação/Venda" {{ ($dados['sup_regime_novo'] ?? '') == 'Alienação/Venda' ? 'selected' : '' }}>Alienação/Venda</option>
+                                        <option value="Cessão de Direito Real de Uso (CDRU)" {{ ($dados['sup_regime_novo'] ?? '') == 'Cessão de Direito Real de Uso (CDRU)' ? 'selected' : '' }}>Cessão de Direito Real de Uso (CDRU)</option>
+                                        <option value="Cessão de Uso em Condições Especiais (CUCE)" {{ ($dados['sup_regime_novo'] ?? '') == 'Cessão de Uso em Condições Especiais (CUCE)' ? 'selected' : '' }}>Cessão de Uso em Condições Especiais (CUCE)</option>
+                                        <option value="Cessão de Uso Gratuita" {{ ($dados['sup_regime_novo'] ?? '') == 'Cessão de Uso Gratuita' ? 'selected' : '' }}>Cessão de Uso Gratuita</option>
+                                        <option value="Cessão de Uso Onerosa" {{ ($dados['sup_regime_novo'] ?? '') == 'Cessão de Uso Onerosa' ? 'selected' : '' }}>Cessão de Uso Onerosa</option>
+                                        <option value="Concessão de Direito Real de Uso (CDRU)" {{ ($dados['sup_regime_novo'] ?? '') == 'Concessão de Direito Real de Uso (CDRU)' ? 'selected' : '' }}>Concessão de Direito Real de Uso (CDRU)</option>
+                                        <option value="Doação" {{ ($dados['sup_regime_novo'] ?? '') == 'Doação' ? 'selected' : '' }}>Doação</option>
+                                        <option value="Entrega" {{ ($dados['sup_regime_novo'] ?? '') == 'Entrega' ? 'selected' : '' }}>Entrega</option>
+                                        <option value="Guarda Provisória" {{ ($dados['sup_regime_novo'] ?? '') == 'Guarda Provisória' ? 'selected' : '' }}>Guarda Provisória</option>
+                                        <option value="Inscrição de Ocupação" {{ ($dados['sup_regime_novo'] ?? '') == 'Inscrição de Ocupação' ? 'selected' : '' }}>Inscrição de Ocupação</option>
+                                        <option value="Permissão de Uso" {{ ($dados['sup_regime_novo'] ?? '') == 'Permissão de Uso' ? 'selected' : '' }}>Permissão de Uso</option>
+                                        <option value="Termo de Autorização de Uso (TAU)" {{ ($dados['sup_regime_novo'] ?? '') == 'Termo de Autorização de Uso (TAU)' ? 'selected' : '' }}>Termo de Autorização de Uso (TAU)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {{-- Deliberação --}}
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title">Deliberação</div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="sup_deliberacao" id="sup-delib-1" value="favoravel" {{ ($dados['sup_deliberacao'] ?? '') == 'favoravel' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-delib-1"><span class="opcao-icone">✔</span><span>Favorável à proposta.</span></label>
+
+                                    <input type="radio" name="sup_deliberacao" id="sup-delib-2" value="favoravel_ressalvas" {{ ($dados['sup_deliberacao'] ?? '') == 'favoravel_ressalvas' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-delib-2"><span class="opcao-icone">✔</span><span>Favorável, com ressalvas.</span></label>
+
+                                    <input type="radio" name="sup_deliberacao" id="sup-delib-3" value="complementacao" {{ ($dados['sup_deliberacao'] ?? '') == 'complementacao' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-delib-3"><span class="opcao-icone">✔</span><span>Necessária complementação de informações/documentos.</span></label>
+
+                                    <input type="radio" name="sup_deliberacao" id="sup-delib-4" value="cancelamento" {{ ($dados['sup_deliberacao'] ?? '') == 'cancelamento' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-delib-4"><span class="opcao-icone">✔</span><span>Cancelamento.</span></label>
+                                </div>
+                            </div>
+
+                            <div class="decl-obs-group" style="margin-bottom: 20px;">
+                                <label for="obs_superintendencia">Observações:</label>
+                                <textarea id="obs_superintendencia" name="obs_superintendencia" placeholder="Registre eventuais ressalvas, condicionantes ou orientações. (Obrigatório em caso de Complementação, Cancelamento ou Novo Regime)">{{ $dados['obs_superintendencia'] ?? '' }}</textarea>
+                            </div>
+
+                            {{-- Competência --}}
+                            <div style="margin-bottom: 20px; border-top: 1px dashed #bae6fd; padding-top: 15px;">
+                                <div class="decl-section-title" style="margin-top:0; border-bottom: none;">O processo deve ser submetido à CDE?</div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="sup_competencia" id="sup-comp-1" value="nao" {{ ($dados['sup_competencia'] ?? '') == 'nao' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-comp-1"><span class="opcao-icone">✔</span><span>Não.</span></label>
+
+                                    <input type="radio" name="sup_competencia" id="sup-comp-2" value="sim" {{ ($dados['sup_competencia'] ?? '') == 'sim' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="sup-comp-2"><span class="opcao-icone">✔</span><span>Sim.</span></label>
+                                </div>
+                            </div>
+
+                        @elseif($chave === 'cde')
+                            {{-- FORMULARIO DA CDE --}}
+                            
+
+                            {{-- Regime de Destinação --}}
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title">Regime de Destinação</div>
+                                <div style="background: #e0f2fe; padding: 10px; border-radius: 6px; margin-bottom: 10px; font-size: 13px;">
+                                    ℹ Regime proposto pelo analista: <strong>{{ $dados3['regime_destinacao'] ?? ($dados3['proposta_destinacao']['regime_destinacao'] ?? 'Não informado') }}</strong>
+                                </div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="cde_regime" id="cde-reg-1" value="manter" {{ ($dados['cde_regime'] ?? '') == 'manter' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-reg-1"><span class="opcao-icone">✔</span><span>Manter regime proposto</span></label>
+
+                                    <input type="radio" name="cde_regime" id="cde-reg-2" value="alterar" {{ ($dados['cde_regime'] ?? '') == 'alterar' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-reg-2"><span class="opcao-icone">✔</span><span>Alterar regime</span></label>
+                                </div>
+                            </div>
+
+                            {{-- Deliberação Final --}}
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title">Deliberação Final</div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="cde_deliberacao" id="cde-delib-1" value="aprovar" {{ ($dados['cde_deliberacao'] ?? '') == 'aprovar' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-delib-1"><span class="opcao-icone">✔</span><span>Aprovar a proposta, nos termos apresentados.</span></label>
+
+                                    <input type="radio" name="cde_deliberacao" id="cde-delib-2" value="indeferir" {{ ($dados['cde_deliberacao'] ?? '') == 'indeferir' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-delib-2"><span class="opcao-icone">✔</span><span>Indeferir a proposta.</span></label>
+                                </div>
+                            </div>
+
+                            {{-- Competência --}}
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title">Processo de competência da Superintendência ou da CDE?</div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="competencia_cde" id="cde-comp-1" value="superintendencia" {{ ($dados['competencia_cde'] ?? '') == 'superintendencia' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-comp-1"><span class="opcao-icone">✔</span><span>Competência da Superintendência</span></label>
+
+                                    <input type="radio" name="competencia_cde" id="cde-comp-2" value="cde" {{ ($dados['competencia_cde'] ?? '') == 'cde' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="cde-comp-2"><span class="opcao-icone">✔</span><span>Competência da CDE</span></label>
+                                </div>
+                            </div>
+
+                            <div class="decl-obs-group" style="margin-bottom: 20px;">
+                                <label for="obs_cde">Observações/Condicionantes:</label>
+                                <textarea id="obs_cde" name="obs_cde" placeholder="Descreva as condicionantes ou ressalvas...">{{ $dados['obs_cde'] ?? '' }}</textarea>
+                            </div>
+
+                        @elseif($chave === 'equipe_cg')
+                            {{-- FORMULARIO CONFORMIDADE PREVIA (Equipe C.G.) --}}
+                            <div class="decl-section-title" style="margin-top:0; border-bottom: none;">Conformidade Prévia</div>
+                            
+                            @php
+                                $checklist = [
+                                    'Documental' => [
+                                        '1' => 'Documentos de identificação (PF/PJ) anexados e válidos?',
+                                        '2' => 'Se PJ, documento de designação do representante legal anexado e válido?',
+                                        '3' => 'Se estrangeiro ou PJ com capital estrangeiro, indicado a necessidade de autorização da Secretária ou Ministra?',
+                                        '4' => 'Prioridade legal (se aplicável) devidamente comprovada?',
+                                        '5' => 'Conformidade Atendida?'
+                                    ],
+                                    'Imóvel' => [
+                                        '7' => 'Áreas informadas (total, União, destinada) consistentes com o requerimento, SPUnet/SIAPA e documentos anexados?',
+                                        '8' => 'Geolocalização informada compativel com os documentos apresentados?',
+                                        '9' => 'Situação de ocupação da área apontada?',
+                                        '10' => 'Matrícula registral atualizada (se existente) anexada?',
+                                        '11' => 'Benfeitorias declaradas e documentadas?',
+                                        '12' => 'Há passivos jurídicos, ambientais ou administrativos sobre o imóvel?',
+                                        '13' => 'Conformidade Atendida?'
+                                    ],
+                                    'Regime e Uso' => [
+                                        '15' => 'Regime selecionado compatível com a natureza do interessado e uso pretendido?',
+                                        '17' => 'Tipo de uso imobiliário e específico compatível com a finalidade declarada?',
+                                        '18' => 'Recursos financeiros para implantação declarados?',
+                                        '19' => 'Interesse Público e Social demonstrado?',
+                                        '20' => 'Conformidade Atendida?'
+                                    ]
+                                ];
+                            @endphp
+
+                            @foreach($checklist as $secao => $itens)
+                                <div style="margin-bottom: 20px;">
+                                    <div class="decl-section-title" style="font-size: 1.1em; color: #1e3a5f;">{{ $secao }}</div>
+                                    @foreach($itens as $id => $pergunta)
+                                        <div class="checklist-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding: 5px; border-radius: 4px; transition: background-color 0.2s;">
+                                            <label style="font-weight: 500; font-size: 0.95em; margin: 0;">{{ $id }}. {{ $pergunta }}</label>
+                                            <div style="display: flex; gap: 15px;">
+                                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; padding: 2px 6px; border-radius: 4px; {{ ($dados['chk_' . $id] ?? '') == 'Sim' ? 'background: #dcfce7; font-weight: bold; color: #166534;' : '' }}">
+                                                    <input type="radio" name="chk_{{ $id }}" value="Sim" {{ ($dados['chk_' . $id] ?? '') == 'Sim' ? 'checked' : '' }}> Sim
+                                                </label>
+                                                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin: 0; padding: 2px 6px; border-radius: 4px; {{ ($dados['chk_' . $id] ?? '') == 'Não' ? 'background: #fee2e2; font-weight: bold; color: #991b1b;' : '' }}">
+                                                    <input type="radio" name="chk_{{ $id }}" value="Não" {{ ($dados['chk_' . $id] ?? '') == 'Não' ? 'checked' : '' }}> Não
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                    <style>
+                                        .checklist-row:hover { background-color: #f1f5f9; }
+                                    </style>
+                                    <div class="decl-obs-group">
+                                        <label for="obs_chk_{{ strtolower(str_replace(' ', '_', $secao)) }}">Observações / Justificativa:</label>
+                                        <textarea id="obs_chk_{{ strtolower(str_replace(' ', '_', $secao)) }}" name="obs_chk_{{ strtolower(str_replace(' ', '_', $secao)) }}" placeholder="Observações...">{{ $dados['obs_chk_' . strtolower(str_replace(' ', '_', $secao))] ?? '' }}</textarea>
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            <div style="margin-bottom: 20px;">
+                                <div class="decl-section-title" style="font-size: 1.1em; color: #1e3a5f;">Manifestação final:</div>
+
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="decl_equipe_cg_opcao" id="decl-equipe-cg-radio1" value="favoravel" {{ ($dados['decl_equipe_cg_opcao'] ?? '') == 'favoravel' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="decl-equipe-cg-radio1">
+                                        <span class="opcao-icone">✔</span>
+                                        <span>As informações sustentam deliberação favorável.</span>
+                                    </label>
+
+                                    <input type="radio" name="decl_equipe_cg_opcao" id="decl-equipe-cg-radio2" value="favoravel_condicionantes" {{ ($dados['decl_equipe_cg_opcao'] ?? '') == 'favoravel_condicionantes' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="decl-equipe-cg-radio2">
+                                        <span class="opcao-icone">✔</span>
+                                        <span>As informações sustentam deliberação com condicionantes.</span>
+                                    </label>
+                                </div>
+
+                                <div class="decl-obs-group" id="bloco-equipe-cg-condicionantes" style="display: {{ ($dados['decl_equipe_cg_opcao'] ?? '') == 'favoravel_condicionantes' ? 'block' : 'none' }};">
+                                    <label for="obs-equipe-cg-condicionantes">Condicionantes:</label>
+                                    <textarea id="obs-equipe-cg-condicionantes" name="obs_equipe_cg_condicionantes" placeholder="XXX campo texto XXX">{{ $dados['obs_equipe_cg_condicionantes'] ?? '' }}</textarea>
+                                </div>
+
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="decl_equipe_cg_opcao" id="decl-equipe-cg-radio3" value="nao_favoravel" {{ ($dados['decl_equipe_cg_opcao'] ?? '') == 'nao_favoravel' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="decl-equipe-cg-radio3">
+                                        <span class="opcao-icone">✔</span>
+                                        <span>As informações não sustentam deliberação favorável no momento.</span>
+                                    </label>
+                                </div>
+
+                                <div class="decl-section-title">Conclusão:</div>
+                                <div class="decl-opcao-btns">
+                                    <input type="radio" name="decl_equipe_cg_conclusao" id="decl-equipe-cg-radio4" value="apta_cde" {{ ($dados['decl_equipe_cg_conclusao'] ?? '') == 'apta_cde' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="decl-equipe-cg-radio4">
+                                        <span class="opcao-icone">✔</span>
+                                        <span>A proposta está apta para apreciação pela Comissão de Destinações Especiais (CDE).</span>
+                                    </label>
+
+                                    <input type="radio" name="decl_equipe_cg_conclusao" id="decl-equipe-cg-radio5" value="inapta_cde" {{ ($dados['decl_equipe_cg_conclusao'] ?? '') == 'inapta_cde' ? 'checked' : '' }}>
+                                    <label class="decl-opcao-btn-label" for="decl-equipe-cg-radio5">
+                                        <span class="opcao-icone">✔</span>
+                                        <span>A proposta não está apta para apreciação pela CDE, devendo retornar à unidade de origem para complementação.</span>
+                                    </label>
+                                </div>
+
+                                <script>
+                                    document.querySelectorAll('input[name="decl_equipe_cg_opcao"]').forEach(radio => {
+                                        radio.addEventListener('change', function() {
+                                            const condsDiv = document.getElementById('bloco-equipe-cg-condicionantes');
+                                            if (this.value === 'favoravel_condicionantes') {
+                                                condsDiv.style.display = 'block';
+                                            } else {
+                                                condsDiv.style.display = 'none';
+                                            }
+                                        });
+                                    });
+                                </script>
+                            </div>
+
+                        @elseif($chave === 'cde')
+                            {{-- FORMULARIO DA CDER --}}
+                            
+                        @else
+                            {{-- FORMULARIO PADRAO (Chefia, Coordenação, Equipe CG, Direção, etc) --}}
+                            <div class="decl-section-title" style="margin-top:0; border-bottom: none;">
+                                {{ $chave === 'equipe_cg' ? 'Conferência da deliberação da Superintendência' : 'Manifestação final:' }}
+                            </div>
+                            
+                            <div class="decl-opcao-btns">
+                                <input type="radio" name="decl_{{ $chave }}_opcao" id="decl-{{ $chave }}-radio1" value="favoravel" {{ ($dados['decl_'. $chave .'_opcao'] ?? '') == 'favoravel' ? 'checked' : '' }}>
+                                <label class="decl-opcao-btn-label" for="decl-{{ $chave }}-radio1">
+                                    <span class="opcao-icone">✔</span>
+                                    <span>As informações sustentam deliberação favorável.</span>
+                                </label>
+
+                                <input type="radio" name="decl_{{ $chave }}_opcao" id="decl-{{ $chave }}-radio2" value="favoravel_condicionantes" {{ ($dados['decl_'. $chave .'_opcao'] ?? '') == 'favoravel_condicionantes' ? 'checked' : '' }}>
+                                <label class="decl-opcao-btn-label" for="decl-{{ $chave }}-radio2">
+                                    <span class="opcao-icone">✔</span>
+                                    <span>As informações sustentam deliberação com condicionantes.</span>
+                                </label>
+                            </div>
+
+                            <div class="decl-obs-group" id="bloco-{{ $chave }}-condicionantes" style="display: {{ ($dados['decl_'. $chave .'_opcao'] ?? '') == 'favoravel_condicionantes' ? 'block' : 'none' }};">
+                                <label for="obs-{{ $chave }}-condicionantes">Condicionantes:</label>
+                                <textarea id="obs-{{ $chave }}-condicionantes" name="obs_{{ $chave }}_condicionantes" placeholder="XXX campo texto XXX">{{ $dados['obs_'. $chave .'_condicionantes'] ?? '' }}</textarea>
+                            </div>
+
+                            <div class="decl-opcao-btns">
+                                <input type="radio" name="decl_{{ $chave }}_opcao" id="decl-{{ $chave }}-radio3" value="nao_favoravel" {{ ($dados['decl_'. $chave .'_opcao'] ?? '') == 'nao_favoravel' ? 'checked' : '' }}>
+                                <label class="decl-opcao-btn-label" for="decl-{{ $chave }}-radio3">
+                                    <span class="opcao-icone">✔</span>
+                                    <span>As informações não sustentam deliberação favorável no momento.</span>
+                                </label>
+                            </div>
+
+                            <div class="decl-section-title">Conclusão:</div>
+                            <div class="decl-opcao-btns">
+                                <input type="radio" name="decl_{{ $chave }}_conclusao" id="decl-{{ $chave }}-radio4" value="apta_cde" {{ ($dados['decl_'. $chave .'_conclusao'] ?? '') == 'apta_cde' ? 'checked' : '' }}>
+                                <label class="decl-opcao-btn-label" for="decl-{{ $chave }}-radio4">
+                                    <span class="opcao-icone">✔</span>
+                                    <span>A proposta está apta para apreciação pela Comissão de Destinações Especiais (CDE).</span>
+                                </label>
+
+                                <input type="radio" name="decl_{{ $chave }}_conclusao" id="decl-{{ $chave }}-radio5" value="inapta_cde" {{ ($dados['decl_'. $chave .'_conclusao'] ?? '') == 'inapta_cde' ? 'checked' : '' }}>
+                                <label class="decl-opcao-btn-label" for="decl-{{ $chave }}-radio5">
+                                    <span class="opcao-icone">✔</span>
+                                    <span>A proposta não está apta para apreciação pela CDE, devendo retornar à unidade de origem para complementação.</span>
+                                </label>
+                            </div>
+                            
+                            <script>
+                                document.querySelectorAll('input[name="decl_{{ $chave }}_opcao"]').forEach(radio => {
+                                    radio.addEventListener('change', function() {
+                                        const condsDiv = document.getElementById('bloco-{{ $chave }}-condicionantes');
+                                        if (this.value === 'favoravel_condicionantes') {
+                                            condsDiv.style.display = 'block';
+                                        } else {
+                                            condsDiv.style.display = 'none';
+                                        }
+                                    });
+                                });
+                            </script>
+                        @endif
+                        </fieldset>
+
+                        @if(!isset($dados[$s['assinatura'] . '_nome']))
+                        <div class="decl-btn-assinar" style="justify-content: flex-end; margin-top: 15px;">
+                            @if($perfil === 'ALL' || $perfil === $s['perfil'])
+                                <button type="submit" class="btn-inst btn-inst-outline" style="padding: 8px 22px; font-weight: 600;" onclick="document.getElementById('hidden_acao_aba7_rascunho').value='{{ $chave }}'; document.getElementById('hidden_acao_aba7').value='';">💾 Salvar Rascunho</button>
+                                <button type="submit" class="btn-assinar" style="padding: 8px 22px; font-weight: 600;" onclick="document.getElementById('hidden_acao_aba7').value='{{ $chave }}'; document.getElementById('hidden_acao_aba7_rascunho').value='';">📤 Salvar e Enviar</button>
+                            @endif
+                        </div>
+                        @endif
+                </div>
+            </div>
+            @endif
+        @endforeach
+
+        <input type="hidden" name="acao_aba7" id="hidden_acao_aba7" value="">
+        <input type="hidden" name="acao_aba7_rascunho" id="hidden_acao_aba7_rascunho" value="">
+    </form>
+</div>
+
+<script>
+function toggleRegimeDropdown() {
+    const radioNao = document.querySelector('input[name="sup_regime_concorda"][value="nao"]');
+    const divSugerido = document.getElementById('div-regime-sugerido');
+    if (radioNao && divSugerido) {
+        divSugerido.style.display = radioNao.checked ? 'block' : 'none';
+    }
+}
+
+(function() {
+    const form07 = document.getElementById('form07');
+    if (!form07) return;
+
+    form07.onsubmit = function(e) {
+        // Se for rascunho, ignora validação
+        const rascunhoVal = document.getElementById('hidden_acao_aba7_rascunho')?.value || '';
+        if (rascunhoVal !== '') {
+            return true;
+        }
+
+        let isValid = true;
+        
+        // Validação customizada para garantir que todos os grupos de radio da seção ativa foram preenchidos
+        const activeSection = document.querySelector('.secao-ativa');
+        if (activeSection) {
+            const radioGroups = new Set();
+            activeSection.querySelectorAll('input[type="radio"]').forEach(radio => radioGroups.add(radio.name));
+            
+            for (let name of radioGroups) {
+                if (!activeSection.querySelector(`input[name="${name}"]:checked`)) {
+                    isValid = false;
+                    alert('Por favor, selecione uma opção para todos os itens obrigatórios da manifestação.');
+                    break;
+                }
+            }
+        }
+
+        if (!isValid || !form07.checkValidity()) {
+            if (e) e.preventDefault();
+            if (isValid) form07.reportValidity();
+            
+            // Limpar os hiddens para não travar próximos submits
+            const hAcao = document.getElementById('hidden_acao_aba7');
+            const hRasc = document.getElementById('hidden_acao_aba7_rascunho');
+            if (hAcao) hAcao.value = '';
+            if (hRasc) hRasc.value = '';
+            return false;
+        }
+    };
+})();
+</script>
