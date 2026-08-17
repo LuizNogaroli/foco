@@ -1,9 +1,8 @@
 // painel-gerencial.js
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. LÓGICA DE PERMISSÕES (Scaffold)
-    // Atualmente permite todos, mas já deixa a lógica estruturada para reunião futura.
-    const perfilAtual = 'qualquer'; // Isso viria do token de login ou sessão
+    // 1. LÓGICA DE PERMISSÕES
+    const perfilAtual = 'qualquer';
     const perfisAutorizados = ['diretoria', 'cde', 'superintendencia', 'secretaria', 'qualquer'];
     
     if (!perfisAutorizados.includes(perfilAtual)) {
@@ -17,7 +16,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Carrega dados iniciais
+    // 2. Renderização Inicial com Dados do Servidor (Blade)
+    if (typeof window.dashboardData !== 'undefined') {
+        renderizarGraficoUF(window.dashboardData.ufCounts || {});
+        renderizarGraficoTipo(window.dashboardData.tipoCounts || {});
+        renderizarGraficoSLA(window.dashboardData.checkpointSLAs || {});
+    }
+
+    // 3. Carrega dados atualizados assincronamente (Supabase)
     await carregarDados();
 });
 
@@ -73,6 +79,11 @@ function parseDataBR(dataStr) {
 }
 
 function processarMetricas(rawData) {
+    if (!rawData || rawData.length === 0) {
+        console.warn("processarMetricas chamado com dados vazios, abortando para evitar limpeza.");
+        return;
+    }
+    
     let totalProcesses = 0;
     let viabilidadesConfirmadas = 0;
     let retidosDirecaoCDE = 0;

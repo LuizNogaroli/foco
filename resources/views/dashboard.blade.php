@@ -99,6 +99,9 @@
             checkpointSLAs: @json($checkpointSLAs)
         };
     </script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="{{ asset('js/db.js') }}"></script>
     <script src="{{ asset('js/painel-gerencial.js') }}"></script>
 </body>
 </html>
