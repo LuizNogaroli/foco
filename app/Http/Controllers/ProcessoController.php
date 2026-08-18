@@ -563,9 +563,9 @@ class ProcessoController extends Controller
                             $foco->rips()->create([
                                 'numero_rip' => $ripData['numero_rip'],
                                 'destinacao_terreno' => $ripData['destinacao_terreno'] ?? null,
-                                'area_terreno_parcial' => $ripData['area_terreno_parcial'] ?? null,
+                                'area_terreno_parcial' => $this->decimalNull($ripData['area_terreno_parcial'] ?? null),
                                 'destinacao_imovel' => $ripData['destinacao_imovel'] ?? null,
-                                'area_imovel_parcial' => $ripData['area_imovel_parcial'] ?? null,
+                                'area_imovel_parcial' => $this->decimalNull($ripData['area_imovel_parcial'] ?? null),
                             ]);
                         }
                     }
@@ -587,15 +587,15 @@ class ProcessoController extends Controller
                                 'complemento' => $cad['complemento'] ?? null,
                                 'municipio' => $cad['municipio'] ?? null,
                                 'uf' => $cad['uf'] ?? null,
-                                'area' => $cad['area'] ?? null,
+                                'area' => $this->decimalNull($cad['area'] ?? null),
                                 'observacoes' => $cad['observacoes'] ?? null,
                                 'latitude' => $cad['latitude'] ?? null,
                                 'longitude' => $cad['longitude'] ?? null,
                                 'modo_localizacao' => $cad['modo_localizacao'] ?? null,
                                 'destinacao_terreno' => $cad['destinacao_terreno'] ?? null,
-                                'area_terreno_parcial' => $cad['area_terreno_parcial'] ?? null,
+                                'area_terreno_parcial' => $this->decimalNull($cad['area_terreno_parcial'] ?? null),
                                 'destinacao_imovel' => $cad['destinacao_imovel'] ?? null,
-                                'area_imovel_parcial' => $cad['area_imovel_parcial'] ?? null,
+                                'area_imovel_parcial' => $this->decimalNull($cad['area_imovel_parcial'] ?? null),
                             ]);
                         }
                     }
@@ -618,8 +618,8 @@ class ProcessoController extends Controller
                         'riscos' => $validatedData['riscos'] ?? null,
                         'ha_restricoes' => $validatedData['ha_restricoes'] ?? null,
                         'restricoes' => $validatedData['restricoes'] ?? null,
-                        'latitude' => $validatedData['latitude'] ?? null,
-                        'longitude' => $validatedData['longitude'] ?? null,
+                        'latitude' => $this->decimalNull($validatedData['latitude'] ?? null),
+                        'longitude' => $this->decimalNull($validatedData['longitude'] ?? null),
                         'geo_cep' => $validatedData['geo_cep'] ?? null,
                         'observacoes_aba2' => $validatedData['observacoes_aba2'] ?? null,
                     ]
@@ -645,9 +645,9 @@ class ProcessoController extends Controller
                                 [
                                     'foco_id' => $foco->id,
                                     'destinacao_terreno' => $ripData['destinacao_terreno'] ?? null,
-                                    'area_terreno_parcial' => $ripData['area_terreno_parcial'] ?? null,
+                                    'area_terreno_parcial' => $this->decimalNull($ripData['area_terreno_parcial'] ?? null),
                                     'destinacao_imovel' => $ripData['destinacao_imovel'] ?? null,
-                                    'area_imovel_parcial' => $ripData['area_imovel_parcial'] ?? null,
+                                    'area_imovel_parcial' => $this->decimalNull($ripData['area_imovel_parcial'] ?? null),
                                 ]
                             );
                         }
@@ -929,6 +929,15 @@ class ProcessoController extends Controller
         ]);
 
         return response()->json(['success' => true]);
+    }
+
+    private function decimalNull($value)
+    {
+        if (is_null($value) || is_numeric($value)) {
+            return $value;
+        }
+        $value = str_replace(',', '.', trim((string) $value));
+        return $value === '' ? null : $value;
     }
 
     private function syncProcessoStatusToSupabase(Processo $processo)
