@@ -94,15 +94,31 @@ try {
         $colList = implode(', ', array_map(fn($c) => "\"$c\"", $columns));
         $valPlaceholders = implode(', ', array_map(fn($c) => ":$c", $columns));
 
+        // Colunas numéricas no PostgreSQL: `''` do SQLite viraria erro de sintaxe numérica.
+        $numericCols = [];
+        $stmtCols = $postgres->query(
+            "SELECT column_name FROM information_schema.columns "
+            . "WHERE table_name = " . $postgres->quote($table)
+            . " AND data_type IN ('numeric', 'decimal', 'smallint', 'integer', 'bigint', 'real', 'double precision')"
+        );
+        foreach ($stmtCols->fetchAll(PDO::FETCH_COLUMN) as $c) {
+            $numericCols[$c] = true;
+        }
+
         $insertQuery = "INSERT INTO \"$table\" ($colList) VALUES ($valPlaceholders)";
         $insertStmt = $postgres->prepare($insertQuery);
 
         $postgres->beginTransaction();
         foreach ($rows as $row) {
-            // Tratar booleanos e valores nulos do SQLite para o PostgreSQL
+            // Normalizar valores do SQLite para o PostgreSQL
             foreach ($row as $key => $val) {
-                if ($val === null) {
+                if (!isset($numericCols[$key])) {
+                    continue;
+                }
+                if ($val === null || trim((string) $val) === '') {
                     $row[$key] = null;
+                } else {
+                    $row[$key] = str_replace(',', '.', trim((string) $val));
                 }
             }
             $insertStmt->execute($row);
