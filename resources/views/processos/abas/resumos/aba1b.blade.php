@@ -16,7 +16,7 @@
 document.addEventListener('DOMContentLoaded', async function() {
   const container = document.getElementById('rips-aba7-container');
   const processId = window.CURRENT_PROCESS_ID || "{{ $processo->numero_requerimento ?? '' }}";
-  const SUPA_URL = window.SUPABASE_URL || 'https://btmpxettyjbtkfkcfmmu.supabase.co';
+  const SUPA_URL = window.SUPABASE_URL || 'https://qokbqurhaowijgbsiudc.supabase.co';
   const SUPA_KEY = window.SUPABASE_ANON_KEY;
 
   if (!processId || !SUPA_URL || !SUPA_KEY) { 

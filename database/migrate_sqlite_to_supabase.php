@@ -54,7 +54,7 @@ if (!$pgHost) {
     $pgHost = readline("Host do Supabase (ex: aws-1-us-west-2.pooler.supabase.com): ");
     $pgPort = readline("Porta (pressione Enter para usar 6543): ") ?: '6543';
     $pgDb   = readline("Nome do Banco (pressione Enter para usar postgres): ") ?: 'postgres';
-    $pgUser = readline("Usuário (ex: postgres.btmpxettyjbtkfkcfmmu): ");
+    $pgUser = readline("Usuário (ex: postgres.qokbqurhaowijgbsiudc): ");
     $pgPass = readline("Senha do Banco (Supabase): ");
 }
 
@@ -319,9 +319,13 @@ try {
 
     // Resumo final das principais tabelas
     echo "\n--- Resumo no Supabase ---\n";
-    foreach (['processos', 'requerimentos', 'users', 'tramites'] as $chave) {
-        $n = $postgres->query("SELECT COUNT(*) FROM \"$chave\"")->fetchColumn();
-        echo "  $chave: $n\n";
+    foreach (['processos', 'requerimentos', 'users', 'tramites', 'tabela_requerimentos', 'tabela_status_fluxo', 'tabela_foco'] as $chave) {
+        try {
+            $n = $postgres->query("SELECT COUNT(*) FROM \"$chave\"")->fetchColumn();
+            echo "  $chave: $n\n";
+        } catch (Exception $e) {
+            echo "  $chave: ⚠ não existe\n";
+        }
     }
 
     echo "🎉 Migração concluída com sucesso absoluto!\n";

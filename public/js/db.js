@@ -5,7 +5,7 @@
 // =========================================================================
 // ATENééO: COLE SUAS CHAVES DO SUPABASE ABAIXO
 // =========================================================================
-const SUPABASE_URL = "https://btmpxettyjbtkfkcfmmu.supabase.co";
+const SUPABASE_URL = "https://qokbqurhaowijgbsiudc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_8CptvwcLfgz6MgDEN4aF-A_R74bLBt1";
 
 window.SUPABASE_URL = SUPABASE_URL;
