@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: foco-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: foco
+      POSTGRES_USER: foco
+      POSTGRES_PASSWORD: foco_secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
