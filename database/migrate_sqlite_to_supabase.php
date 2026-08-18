@@ -13,12 +13,23 @@ if (!file_exists($sqlitePath)) {
 }
 
 // Configurações do Supabase (Insira os mesmos dados usados no Render)
-echo "--- Configurações de Conexão com o Supabase ---\n";
-$pgHost = readline("Host do Supabase (ex: aws-1-us-west-2.pooler.supabase.com): ");
-$pgPort = readline("Porta (pressione Enter para usar 6543): ") ?: '6543';
-$pgDb   = readline("Nome do Banco (pressione Enter para usar postgres): ") ?: 'postgres';
-$pgUser = readline("Usuário (ex: postgres.btmpxettyjbtkfkcfmmu): ");
-$pgPass = readline("Senha do Banco (Supabase): ");
+// Prioriza variáveis de ambiente; caso contrário, pergunta no terminal.
+// Variáveis aceitas: SUPABASE_PGHOST, SUPABASE_PGPORT, SUPABASE_PGDATABASE,
+//                     SUPABASE_PGUSER, SUPABASE_PGPASSWORD
+$pgHost = getenv('SUPABASE_PGHOST');
+$pgPort = getenv('SUPABASE_PGPORT') ?: '6543';
+$pgDb   = getenv('SUPABASE_PGDATABASE') ?: 'postgres';
+$pgUser = getenv('SUPABASE_PGUSER');
+$pgPass = getenv('SUPABASE_PGPASSWORD');
+
+if (!$pgHost) {
+    echo "--- Configurações de Conexão com o Supabase ---\n";
+    $pgHost = readline("Host do Supabase (ex: aws-1-us-west-2.pooler.supabase.com): ");
+    $pgPort = readline("Porta (pressione Enter para usar 6543): ") ?: '6543';
+    $pgDb   = readline("Nome do Banco (pressione Enter para usar postgres): ") ?: 'postgres';
+    $pgUser = readline("Usuário (ex: postgres.btmpxettyjbtkfkcfmmu): ");
+    $pgPass = readline("Senha do Banco (Supabase): ");
+}
 
 echo "\nConectando aos bancos de dados...\n";
 
@@ -44,6 +55,19 @@ $stmt = $sqlite->query("SELECT name FROM sqlite_master WHERE type='table' AND na
 $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 echo "\nIniciando cópia de dados para " . count($tables) . " tabelas...\n";
+
+// Confirmação de segurança: a migração TRUNCA todas as tabelas no Supabase
+$force = getenv('SUPABASE_FORCE') === '1' || in_array('--force', $argv ?? []);
+if (!$force) {
+    echo "\n⚠ ATENÇÃO: TODAS as tabelas do Supabase serão TRUNCADAS (CASCADE) e\n";
+    echo "recopiadas do SQLite local. Os dados atuais no Supabase serão APAGADOS.\n";
+    echo "Para pular esta confirmação, defina SUPABASE_FORCE=1 ou use --force.\n";
+    echo "Deseja continuar? (sim/nao): ";
+    $confirm = strtolower(trim(fgets(STDIN)));
+    if (!in_array($confirm, ['sim', 's', 'yes', 'y'])) {
+        die("Abortado. Nenhum dado foi alterado.\n");
+    }
+}
 
 try {
     // Desabilitar triggers (foreign keys) no PostgreSQL temporariamente
@@ -105,6 +129,14 @@ try {
     // Reabilitar triggers no PostgreSQL
     $postgres->exec("SET session_replication_role = 'origin';");
     echo "\n✔ Chaves estrangeiras reabilitadas no Supabase.\n";
+
+    // Resumo final das principais tabelas
+    echo "\n--- Resumo no Supabase ---\n";
+    foreach (['processos', 'requerimentos', 'users', 'tramites'] as $chave) {
+        $n = $postgres->query("SELECT COUNT(*) FROM \"$chave\"")->fetchColumn();
+        echo "  $chave: $n\n";
+    }
+
     echo "🎉 Migração concluída com sucesso absoluto!\n";
 
 } catch (Exception $e) {
