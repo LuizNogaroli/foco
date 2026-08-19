@@ -101,11 +101,12 @@ try {
     $postgres->exec("SET session_replication_role = 'replica';");
     echo "✔ Chaves estrangeiras temporariamente desabilitadas no Supabase.\n\n";
 
-    // FASE 1: TRUNCATE todas as tabelas primeiro (sem CASCADE!)
+    // FASE 1: TRUNCATE todas as tabelas primeiro (com CASCADE, mas seguro porque
+    // nenhum dado foi inserido ainda — tudo será apagado de uma vez)
     echo "=== Fase 1: Limpando tabelas ===\n";
     foreach ($tables as $table) {
         try {
-            $postgres->exec("TRUNCATE TABLE \"$table\" RESTART IDENTITY;");
+            $postgres->exec("TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;");
             echo "  ✔ \"$table\" limpa.\n";
         } catch (Exception $e) {
             echo "  ⚠ \"$table\": " . $e->getMessage() . "\n";
