@@ -101,12 +101,22 @@ try {
     $postgres->exec("SET session_replication_role = 'replica';");
     echo "✔ Chaves estrangeiras temporariamente desabilitadas no Supabase.\n\n";
 
+    // FASE 1: TRUNCATE todas as tabelas primeiro (sem CASCADE!)
+    echo "=== Fase 1: Limpando tabelas ===\n";
+    foreach ($tables as $table) {
+        try {
+            $postgres->exec("TRUNCATE TABLE \"$table\" RESTART IDENTITY;");
+            echo "  ✔ \"$table\" limpa.\n";
+        } catch (Exception $e) {
+            echo "  ⚠ \"$table\": " . $e->getMessage() . "\n";
+        }
+    }
+
+    // FASE 2: Inserir dados em todas as tabelas
+    echo "\n=== Fase 2: Copiando dados ===\n";
     foreach ($tables as $table) {
         echo "Processando tabela: [$table]... ";
         
-        // Limpar dados existentes na tabela no PostgreSQL
-        $postgres->exec("TRUNCATE TABLE \"$table\" RESTART IDENTITY CASCADE;");
-
         // Obter dados do SQLite
         $query = $sqlite->query("SELECT * FROM \"$table\"");
         $rows = $query->fetchAll();
